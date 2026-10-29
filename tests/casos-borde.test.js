@@ -114,6 +114,24 @@ server.listen(8798,async()=>{
   await p.locator('[data-a="tab"][data-v="rutina"]').click(); await p.locator('[data-a="backup"]').click(); await p.locator('#bin').fill('esto no es una copia'); await p.locator('[data-a="askrestore"]').click(); await p.locator('[data-a="restore"]').click(); await p.waitForTimeout(150);
   ok((await p.locator('#toast').innerText()).includes('no es una copia válida') && (await S()).sessions.length>=3,'una copia inválida no borra nada');
 
+  // 8. Migración a la versión 5: dibujos y pasos nuevos sin pisar lo personalizado
+  await p.evaluate(()=>{const S=JSON.parse(localStorage.getItem('trazo_v1'));S.v=4;S.ex.f1.sil='empuje';delete S.ex.f1.how;delete S.ex.f1.ojo;S.ex.f4.sil='sentadilla';delete S.ex.f4.how;S.ex.f2.how=['mi paso'];localStorage.setItem('trazo_v1',JSON.stringify(S))});
+  await p.reload(); await p.waitForTimeout(400);
+  const m=await p.evaluate(()=>JSON.parse(localStorage.getItem('trazo_v1')));
+  ok(m.v===5 && m.ex.f1.sil==='banca' && m.ex.f1.how && m.ex.f1.how.length>=3,'migración: el press de banca recibe su dibujo y sus pasos');
+  ok(m.ex.f4.sil==='sentadilla','migración: un dibujo que cambiaste a mano se respeta');
+  ok(m.ex.f2.how.length===1 && m.ex.f2.how[0]==='mi paso','migración: tus pasos escritos no se pisan');
+  // 9. ¿Cómo se hace? se abre y se queda abierto al pasar de ejercicio
+  await p.evaluate(()=>{const S=JSON.parse(localStorage.getItem('trazo_v1'));S.days[0].fue=['f1','f4','f2'];S.next=0;S.draft=null;localStorage.setItem('trazo_v1',JSON.stringify(S))}); await p.reload(); await p.waitForTimeout(300);
+  await p.locator('[data-a="start"]').click(); await p.locator('[data-a="jump"][data-v="fue"]').click(); await p.waitForTimeout(150);
+  if(await p.locator('[data-a="endtrans"]').count()) await p.locator('[data-a="endtrans"]').click();
+  ok(await p.locator('.how').count()===0,'los pasos arrancan cerrados');
+  await p.locator('[data-a="how"]').click(); await p.waitForTimeout(100);
+  ok(await p.locator('.how li').count()>=3 && (await p.locator('.how').innerText()).includes('Ojo'),'¿Cómo se hace? muestra pasos y error común');
+  await p.locator('[data-a="goto"]').nth(1).click(); await p.waitForTimeout(100);
+  ok(await p.locator('.how').count()===1,'siguen abiertos en el siguiente ejercicio');
+  ok(await p.locator('.bseg button.on').innerText().then(t=>t.includes('FUERZA')||t.includes('Fuerza')),'el bloque activo se marca arriba');
+  await p.locator('[data-a="exitsession"]').click();
   ok(errors.length===0,'sin errores de JavaScript'+(errors.length?': '+errors.join(' | '):''));
  }catch(e){ ok(false,'excepción: '+e.message.split('\n')[0]); }
  await b.close(); server.close();

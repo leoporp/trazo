@@ -14,7 +14,7 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 
 ## Arquitectura
 
-- `index.html`: toda la app (HTML, CSS y JS vanilla, sin build). Estado en `localStorage` (`trazo_v1`), modelo `v:4` con `migrate()`.
+- `index.html`: toda la app (HTML, CSS y JS vanilla, sin build). Estado en `localStorage` (`trazo_v1`), modelo `v:5` con `migrate()` (4→5: `upgradeEx` pone dibujo y pasos nuevos solo si el ejercicio tenía el dibujo de fábrica / no tenía pasos; nunca pisa lo que Leo editó).
 - `config.js`: URL y **publishable key** del mismo proyecto Supabase de Fibra. Nunca la secret.
 - `supabase/setup.sql`: tabla `trazo_state` (un JSON por usuario, RLS "solo lo propio"). Idempotente.
 - Sincronización: `save()` marca `S.updatedAt` y sube a los 700 ms. Al abrir o volver a la app (`pull`): si la nube es más nueva se adopta, si el celular es más nuevo se sube. Con una sesión de entrenamiento abierta nunca se reemplaza nada (gana el celular). Sesión de Supabase en `trazo-auth` (Fibra usa `fibra-auth`; mismo origen `leoporp.github.io`, por eso claves distintas).
@@ -26,6 +26,10 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 - Hosting: GitHub Pages desde `main` del repo público `leoporp/trazo` → https://leoporp.github.io/trazo/. No metas datos personales en el código.
 
 ## Decisiones ya tomadas
+
+- **Dibujos** (`SIL`): figura articulada con largos fijos (`LEN`), ángulos absolutos (0 abajo, 90 adelante, 180 arriba) o cinemática inversa `{to,b}` (b=-1 rodilla hacia adelante/arriba). Uno por ejercicio con accesorios (banco, barra = disco azul, mancuerna, cable, máquina). Vista lateral mirando a la derecha; `front:1` para laterales, aperturas, abductores, mariposa. Extremidades del fondo en gris. Encuadre automático. Para revisar todos: hoja de contactos (inicio/final) antes de subir cambios. Los nombres viejos (`bisagra`, `core`…) se traducen con `silKey`.
+- **¿Cómo se hace?**: botón en la sesión que abre los pasos (`e.how`, lista) y el error común (`e.ojo`); se queda abierto al pasar de ejercicio (`howOpen`). Editables en Rutina › ejercicio.
+- **Jerarquía en la sesión** (pedida por Leo): arriba día y avance total; luego los bloques Calentar/Estirar/Fuerza como selector grande con su color (`BCOL`: seg1, seg2, accent) y barra de avance; debajo, los ejercicios del bloque como lista numerada más pequeña; luego etiqueta de color con el bloque y el título.
 
 - Diseño "Trazo": fondo hueso, acento azul acero, curvas orgánicas decorativas (nunca gráficas que parezcan datos y no se lean), tono de parcero con humor seco.
 - Sesión: calentamiento → estiramiento → fuerza, con saltos libres entre bloques (no siempre entrena en el mismo orden).

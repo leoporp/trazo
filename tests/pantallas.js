@@ -47,6 +47,7 @@ server.listen(8796,async()=>{
   await p.locator('[data-a="jump"][data-v="fue"]').click(); await shot('10-transicion');
   await p.waitForTimeout(1600); await shot('11-transicion-fin');
   await p.locator('[data-a="endtrans"]').click(); await shot('12-sesion-fuerza');
+  await p.locator('[data-a="how"]').click(); await shot('12b-como-se-hace'); await p.locator('[data-a="how"]').click();
   await p.locator('[data-a="toggleset"]').first().click(); await shot('13-sesion-fuerza-descanso');
   await p.mouse.wheel(0,600); await shot('14-sesion-fuerza-abajo');
   await p.locator('.shead [data-a="finish"]').click(); await shot('15-terminar-confirmar');
