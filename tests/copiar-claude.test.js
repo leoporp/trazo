@@ -25,7 +25,9 @@ server.listen(8795,async()=>{
   if(await p.locator('[data-a="endtrans"]').count()) { await p.locator('[data-a="endtrans"]').click(); await p.waitForTimeout(200); }
   const kg=p.locator('input[data-in="kg"]').first(); await kg.fill('40');
   await p.locator('[data-a="toggleset"]').first().click(); await p.waitForTimeout(100);
-  await p.locator('[data-a="finish"]').first().click().catch(async()=>{ await p.evaluate(()=>{}); });
+  await p.locator('.shead [data-a="finish"]').click(); await p.waitForTimeout(150);
+  ok(await p.locator('.confirm').count()===1,'Terminar con ejercicios pendientes pide confirmación');
+  await p.locator('.confirm [data-a="finish"]').click();
   await p.waitForTimeout(400);
   if(await p.locator('[data-a="closecard"]').count()) await p.locator('[data-a="closecard"]').click();
   await p.waitForTimeout(200);
