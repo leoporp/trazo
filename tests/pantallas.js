@@ -25,13 +25,14 @@ function seed(){
   localStorage.setItem('trazo_v1',JSON.stringify(S)); return true;
 }
 server.listen(8796,async()=>{
- const b=await chromium.launch(); const errors=[];
+ const b=await chromium.launch(); const errors=[]; const VW=Number(process.env.VW||390), VH=Number(process.env.VH||844);
  for(const scheme of ['light','dark']){
-  const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,colorScheme:scheme,serviceWorkers:'block'});
+  const ctx=await b.newContext({viewport:{width:VW,height:VH},deviceScaleFactor:1,colorScheme:scheme,serviceWorkers:'block'});
   const p=await ctx.newPage(); p.on('pageerror',e=>errors.push(scheme+': '+e.message)); p.on('console',m=>{if(m.type()==='error')errors.push(scheme+' console: '+m.text())});
   const shot=async n=>{await p.waitForTimeout(250);await p.screenshot({path:OUT+'/'+scheme+'-'+n+'.png'})};
   await p.goto('http://localhost:8796/'); await p.waitForTimeout(300);
   await shot('01-hoy-vacio');
+  const ov=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth); if(ov) errors.push(scheme+': hay scroll horizontal en Hoy');
   await p.locator('[data-a="dance"]').click(); await p.locator('[data-a="dance"]').click();
   if(!(await p.evaluate(seed))) errors.push('no se pudo sembrar datos'); await p.reload(); await p.waitForTimeout(300);
   await shot('02-hoy'); await p.mouse.wheel(0,700); await shot('03-hoy-abajo'); await p.mouse.wheel(0,-2000);
@@ -41,7 +42,8 @@ server.listen(8796,async()=>{
   await p.locator('[data-a="toggleset"]').first().click(); await shot('06-sesion-cal-marcada');
   await p.locator('[data-a="jump"][data-v="est"]').click(); await shot('07-sesion-est');
   await p.locator('[data-a="toggleset"]').first().click(); await shot('08-sesion-est-descanso');
-  const hold=p.locator('[data-a="hold"]'); if(await hold.count()){ await p.locator('[data-a="goto"]').nth(2).click(); await p.locator('[data-a="hold"]').first().click(); await shot('09-sesion-mantener'); }
+  if(await p.locator('[data-a="skiprest"]').count()) await p.locator('[data-a="skiprest"]').click();
+  await p.locator('[data-a="goto"]').nth(2).click(); await p.locator('[data-a="hold"]').first().click(); await p.waitForTimeout(1300); await shot('09-sesion-mantener');
   await p.locator('[data-a="jump"][data-v="fue"]').click(); await shot('10-transicion');
   await p.waitForTimeout(1600); await shot('11-transicion-fin');
   await p.locator('[data-a="endtrans"]').click(); await shot('12-sesion-fuerza');

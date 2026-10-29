@@ -43,7 +43,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 input,select,textarea{font:inherit;color:var(--ink)}
 .wrap{max-width:480px;margin:0 auto;padding:0 20px 120px;position:relative;min-height:100%}
-.bgcurves{position:absolute;inset:0 0 auto 0;height:300px;pointer-events:none;overflow:hidden}
+.bgcurves{position:absolute;inset:0 0 auto 0;width:100%;height:300px;pointer-events:none;overflow:hidden}
 .bgcurves path{stroke:var(--line);stroke-width:1.5;fill:none}
 .mono{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .num{font-variant-numeric:tabular-nums}
@@ -122,8 +122,8 @@ h2.sec{margin:0;font-family:var(--display);font-weight:600;font-size:30px;text-t
 .dots i{width:14px;height:6px;border-radius:3px;background:var(--seg1)}
 .dots i.d{background:var(--accent)}
 .dots i.c{background:var(--ink)}
-.silbox{background:var(--surface);border-radius:24px;height:230px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.silbox svg.sil{width:100%;max-width:330px;height:210px}
+.silbox{background:var(--surface);border-radius:24px;height:min(230px,27vh);min-height:150px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.silbox svg.sil{width:100%;max-width:330px;height:calc(100% - 20px)}
 .sil .sg{stroke:var(--seg1);stroke-width:7;stroke-linecap:round}
 .sil .sgh{fill:var(--seg1)}
 .sil .ss{stroke:var(--ink);stroke-width:8;stroke-linecap:round}
@@ -377,10 +377,10 @@ async function pull(){
   try{({data,error}=await cloud.sb.from('trazo_state').select('data').eq('user_id',cloud.session.user.id).maybeSingle())}catch(e){error=e}
   if(error){setSync(netDown(error)?'offline':'error');return}
   const remote=data&&data.data;
-  if(remote&&syncedUid()!==cloud.session.user.id&&!stack.includes('session')){const d=migrate(JSON.parse(JSON.stringify(remote)));if(d){const localNewer=(S.updatedAt||0)>(remote.updatedAt||0);const base=localNewer?S:d;const added=mergeLocal(localNewer?d:S,base)||localNewer;S=base;persist();markSynced();if(!stack.length)render();else if(sheetState&&sheetState.kind==='account')rerenderSheet();if(added){toast('Se juntaron los datos de este celular con los de la nube');save()}else{cloud.dirty=false;cloud.last=Date.now();setSync('ok')}return}}
+  if(remote&&syncedUid()!==cloud.session.user.id&&!stack.includes('session')){const d=migrate(JSON.parse(JSON.stringify(remote)));if(d){const localNewer=(S.updatedAt||0)>(remote.updatedAt||0);const base=localNewer?S:d;const added=mergeLocal(localNewer?d:S,base)||localNewer;S=base;persist();markSynced();if(!overlay())render();else if(sheetState&&sheetState.kind==='account')rerenderSheet();if(added){toast('Se juntaron los datos de este celular con los de la nube');save()}else{cloud.dirty=false;cloud.last=Date.now();setSync('ok')}return}}
   if(remote&&(remote.updatedAt||0)>(S.updatedAt||0)&&!stack.includes('session')){
     const d=migrate(JSON.parse(JSON.stringify(remote)));
-    if(d){S=d;persist();cloud.dirty=false;cloud.last=Date.now();setSync('ok');if(!stack.length)render();else if(sheetState&&sheetState.kind==='account')rerenderSheet();return}
+    if(d){S=d;persist();cloud.dirty=false;cloud.last=Date.now();setSync('ok');if(!overlay())render();else if(sheetState&&sheetState.kind==='account')rerenderSheet();return}
   }
   if(!remote||(S.updatedAt||0)>(remote.updatedAt||0)||stack.includes('session')){if(!S.updatedAt)S.updatedAt=Date.now();persist();await push();return}
   cloud.dirty=false;cloud.last=Date.now();setSync('ok');markSynced();
@@ -391,9 +391,9 @@ async function initCloud(){
   try{
     cloud.sb=make(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'trazo-auth'}});
     const {data}=await cloud.sb.auth.getSession();cloud.session=(data&&data.session)||null;
-    cloud.sb.auth.onAuthStateChange((ev,s)=>{cloud.session=s||null;if(ev==='SIGNED_IN')setTimeout(pull,0);if(ev==='SIGNED_OUT'){setSync('nologin');setTimeout(()=>{if(!stack.length)render()},0)}});
+    cloud.sb.auth.onAuthStateChange((ev,s)=>{cloud.session=s||null;if(ev==='SIGNED_IN')setTimeout(pull,0);if(ev==='SIGNED_OUT'){setSync('nologin');setTimeout(()=>{if(!overlay())render()},0)}});
     if(cloud.session)await pull();else setSync('nologin');
-    if(!stack.length)render();
+    if(!overlay())render();
   }catch(e){cloud.sb=null;cloud.session=null;setSync('local')}
 }
 window.addEventListener('online',()=>{if(cloudReady())(cloud.dirty?push():pull())});
@@ -439,8 +439,9 @@ const measuresFor=k=>S.measures.filter(m=>m.v[k]!=null).sort((a,b)=>a.date.local
 /* ---------- navegación con botón atrás ---------- */
 let tab='hoy';const stack=[];
 function pushLayer(kind){stack.push(kind);try{history.pushState({trazo:stack.length},'')}catch(e){}}
-function popLayer(fromHistory){const k=stack.pop();if(!k)return;if(k==='sheet')closeSheetDom();if(k==='session')closeSessionDom();if(k==='card')closeCardDom();if(!fromHistory){try{history.back()}catch(e){}}}
-window.addEventListener('popstate',()=>{if(stack.length)popLayer(true)});
+let skipPop=0;const overlay=()=>stack.some(k=>k!=='tab');
+function popLayer(fromHistory){const k=stack.pop();if(!k)return;if(k==='sheet')closeSheetDom();if(k==='session')closeSessionDom();if(k==='card')closeCardDom();if(k==='tab'){tab='hoy';render();window.scrollTo(0,0)}if(!fromHistory){skipPop++;try{history.back()}catch(e){skipPop--}}}
+window.addEventListener('popstate',()=>{if(skipPop){skipPop--;return}if(stack.length)popLayer(true)});
 const closeTop=()=>{if(stack.length){const k=stack[stack.length-1];popLayer(false);return k}};
 
 /* ---------- vistas principales ---------- */
@@ -672,14 +673,16 @@ function startSession(){
   if(!S.draft){S.draft=buildDraft(curDay());save()}
   if(!S.draft.steps.length){toast('Este día no tiene ejercicios. Agrégale algunos en Rutina.');S.draft=null;save();return}
   pushLayer('session');renderSession();
+  const R=S.draft&&S.draft.rest;if(R&&R.end>Date.now()+1000){T={kind:'rest',end:R.end,total:R.total,id:R.id,k:R.k};tickH=setInterval(tick,200);renderFoot();tick()}else if(R){delete S.draft.rest;persist()}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>wakeLock=l).catch(()=>{})}catch(e){}
   try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
 }
 function closeSessionDom(){$('#ov').innerHTML='';stopTimer();try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null;render()}
+function wakeAudio(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}catch(e){}}
 function beep(){try{if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=660;g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.25,audioCtx.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.5);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.55)}catch(e){}try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}}
 const WAVE='M4 11 C 30 2, 50 20, 78 11 S 126 2, 154 11 S 204 20, 232 11 S 282 2, 306 11';
-function startTimer(kind,secs,id,k){stopTimer();T={kind,end:Date.now()+secs*1000,total:secs,id,k};tickH=setInterval(tick,200);renderFoot();tick()}
-function stopTimer(){if(tickH)clearInterval(tickH);tickH=null;T=null}
+function startTimer(kind,secs,id,k){stopTimer();T={kind,end:Date.now()+secs*1000,total:secs,id,k};if(kind==='rest'&&S.draft){S.draft.rest={end:T.end,total:secs,id,k};persist()}tickH=setInterval(tick,200);renderFoot();tick()}
+function stopTimer(){if(tickH)clearInterval(tickH);tickH=null;T=null;if(S&&S.draft&&S.draft.rest){delete S.draft.rest;persist()}}
 function tick(){
   if(!T)return;const left=(T.end-Date.now())/1000;const tv=document.getElementById('tv'),tf=document.getElementById('tf');
   if(tv)tv.textContent=mmss(left);if(tf)tf.setAttribute('stroke-dasharray',(Math.min(100,Math.max(0,(1-left/T.total)*100))).toFixed(1)+' 100');
@@ -722,7 +725,9 @@ function renderSession(){
     body+='<div class="sets"><div class="sethead" style="grid-template-columns:44px minmax(0,1fr) 44px"><span>SERIE</span><span>OBJETIVO</span><span></span></div>'+
     L.sets.map((s,k)=>'<div class="setrow'+(s.done?' done':'')+(justDone===e.id+'_'+k?' just':'')+'" style="grid-template-columns:44px minmax(0,1fr) 44px"><span class="sn">'+setLabel(e,k)+'</span><span class="pv num">'+esc(e.target)+' reps</span><button class="tick" data-a="toggleset" data-id="'+e.id+'" data-k="'+k+'" aria-label="Marcar serie '+setLabel(e,k)+'">'+I.tick+'</button></div>').join('')+'</div>';
   }
-  $('#ov').innerHTML='<div class="ov" role="dialog" aria-label="Sesión"><div class="in"><div class="shead"><button class="iconbtn" data-a="exitsession" aria-label="Salir de la sesión">'+I.close+'</button><div class="dots" aria-label="Ejercicio '+pos+' de '+inBlock.length+'">'+dots+'</div><button class="chip" data-a="finish">Terminar</button></div>'+(D.askEnd?'<div class="confirm"><span style="flex:1">Te faltan '+D.steps.filter(st=>!stepDone(D,st)).length+' ejercicios. ¿Terminar igual? Se guarda lo que marcaste.</span><button class="ghostbtn" style="height:40px" data-a="noend">Seguir</button><button class="ghostbtn" style="height:40px" data-a="finish" data-sure="1">Terminar</button></div>':'')+tabs+exChips+body+'</div></div><div class="sfoot" id="sfoot"></div>';
+  const prevOv=document.querySelector('#ov .ov');const keepY=prevOv&&prevOv.dataset.step===String(D.step)?prevOv.scrollTop:0;
+  $('#ov').innerHTML='<div class="ov" data-step="'+D.step+'" role="dialog" aria-label="Sesión"><div class="in"><div class="shead"><button class="iconbtn" data-a="exitsession" aria-label="Salir de la sesión">'+I.close+'</button><div class="dots" aria-label="Ejercicio '+pos+' de '+inBlock.length+'">'+dots+'</div><button class="chip" data-a="finish">Terminar</button></div>'+(D.askEnd?'<div class="confirm"><span style="flex:1">Te faltan '+D.steps.filter(st=>!stepDone(D,st)).length+' ejercicios. ¿Terminar igual? Se guarda lo que marcaste.</span><button class="ghostbtn" style="height:40px" data-a="noend">Seguir</button><button class="ghostbtn" style="height:40px" data-a="finish" data-sure="1">Terminar</button></div>':'')+tabs+exChips+body+'</div></div><div class="sfoot" id="sfoot"></div>';
+  if(keepY){const o=document.querySelector('#ov .ov');if(o)o.scrollTop=keepY}
   justDone=null;renderFoot();
 }
 function renderFoot(){
@@ -785,7 +790,8 @@ async function cardImage(id){
 
 /* ---------- acciones ---------- */
 const A={
-  tab:el=>{tab=el.dataset.v;render();window.scrollTo(0,0)},
+  tab:el=>{const v=el.dataset.v;if(v===tab){window.scrollTo({top:0,behavior:'smooth'});return}
+    if(v==='hoy'){if(stack[stack.length-1]==='tab'){closeTop();return}tab='hoy'}else{if(!stack.includes('tab'))pushLayer('tab');tab=v}render();window.scrollTo(0,0)},
   pickday:el=>{const id=el.dataset.v;S.sel=nextMine().id===id?null:id;save();render()},
   start:()=>startSession(),
   exitsession:()=>{save();closeTop();toast('Tu sesión quedó guardada. Toca Continuar para seguir.')},
@@ -801,14 +807,14 @@ const A={
   noend:()=>{S.draft.askEnd=false;renderSession()},
   stalekeep:()=>{if(!S.draft)return;pushLayer('session');finishSession()},
   staledrop:()=>{S.draft=null;save();render();toast('Sesión descartada')},
-  toggleset:el=>{const id=el.dataset.id,k=Number(el.dataset.k);const s=S.draft.log[id].sets[k];const e=exOf(id);s.done=!s.done;S.draft.last=Date.now();
+  toggleset:el=>{wakeAudio();const id=el.dataset.id,k=Number(el.dataset.k);const s=S.draft.log[id].sets[k];const e=exOf(id);s.done=!s.done;S.draft.last=Date.now();
     if(s.done){if(s.kg==null&&s.ph!=null&&e.block==='fue')s.kg=s.ph;if(s.reps==null&&e.block==='fue'&&e.kind!=='time'){const r=parseInt(String(e.target).split('-').pop());if(!isNaN(r))s.reps=r}justDone=id+'_'+k;
       if(T&&T.kind==='hold'&&T.id===id&&T.k===k)stopTimer();
       const L=S.draft.log[id].sets;const rest=e.rest!=null?Number(e.rest):S.settings.rest;const lastOfAll=L.every(x=>x.done)&&nextIdx(S.draft)<0;
       if(e.block!=='cal'&&rest>0&&!lastOfAll&&!(e.side&&k%2===0))startTimer('rest',rest,id,k)}
     save();renderSession()},
   addset:el=>{const L=S.draft.log[el.dataset.id].sets;const l=L[L.length-1];L.push({kg:null,reps:null,done:false,ph:l?(l.kg!=null?l.kg:l.ph):null,prev:null});save();renderSession()},
-  hold:el=>{const id=el.dataset.id,k=Number(el.dataset.k);if(T&&T.kind==='hold'&&T.id===id&&T.k===k){stopTimer();renderSession();return}startTimer('hold',Number(exOf(id).target)||45,id,k);renderSession()},
+  hold:el=>{wakeAudio();const id=el.dataset.id,k=Number(el.dataset.k);if(T&&T.kind==='hold'&&T.id===id&&T.k===k){stopTimer();renderSession();return}startTimer('hold',Number(exOf(id).target)||45,id,k);renderSession()},
   skiprest:()=>{stopTimer();renderFoot()},
   cardimage:el=>cardImage(el.dataset.v),
   closecard:()=>closeTop(),
