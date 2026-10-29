@@ -505,6 +505,38 @@ function lineChart(pts,unit,better){
   return '<svg class="ch" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Evolución de '+fmtNum(pts[0].y)+' a '+fmtNum(pts[pts.length-1].y)+' '+esc(unit)+'"><line class="gl" x1="'+l+'" y1="'+t+'" x2="'+(W-r)+'" y2="'+t+'"/><line class="gl" x1="'+l+'" y1="'+(H-b)+'" x2="'+(W-r)+'" y2="'+(H-b)+'"/><text x="'+(l-6)+'" y="'+(t+4)+'" text-anchor="end">'+fmtNum(mx)+'</text><text x="'+(l-6)+'" y="'+(H-b+4)+'" text-anchor="end">'+fmtNum(mn)+'</text><path class="ar" d="'+d+' L'+last[0].toFixed(1)+' '+(H-b)+' L'+P[0][0].toFixed(1)+' '+(H-b)+'Z"/><path class="ln" d="'+d+'"/>'+P.slice(0,-1).map(p=>'<circle class="pt" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3"/>').join('')+'<circle class="end" cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="5"/><text x="'+l+'" y="'+(H-4)+'">'+fmtD(pts[0].date)+'</text><text x="'+(W-r)+'" y="'+(H-4)+'" text-anchor="end">'+fmtD(pts[pts.length-1].date)+'</text></svg>';
 }
 let progEx=null;
+
+/* ---------- segunda opinión: resumen en texto para pegar en un proyecto de Claude ---------- */
+const AI_DAYS=28;
+function aiText(){
+  const today=new Date(),tk=iso(today),f=new Date(today);f.setDate(f.getDate()-(AI_DAYS-1));const from=iso(f);
+  const dl=k=>{const d=parseISO(k);return DIAS[d.getDay()].slice(0,3)+' '+d.getDate()+' '+MES[d.getMonth()]};
+  const rx=e=>e.sets+' × '+(e.kind==='time'?e.target+' s':e.target+' reps')+(e.side?' por lado':'')+(e.block!=='cal'&&e.rest?', descanso '+e.rest+' s':'');
+  let t='Datos de Trazo (mi app de gym) para analizar. Hoy es '+dl(tk)+' ('+tk+'). Periodo: últimas 4 semanas ('+from+' a '+tk+').\n\n';
+  t+='## Rutina actual\nMeta: '+S.settings.goal+' días por semana. Mis días rotan en orden: si no voy, sigue el que toca. Cada sesión es calentamiento, estiramiento y fuerza, no siempre en ese orden.\n';
+  t+='Progresión de la app: si completo el rango de repeticiones en todas las series, sugiere subir 2,5 kg (1 kg en laterales). Las sesiones marcadas "tras bailar" (vengo de clase de danza) no cuentan para subir peso ni récords.\n';
+  const md=myDays(),same=b=>md.every(d=>d[b].join()===md[0][b].join());const shared=['cal','est'].filter(b=>md.length>1&&same(b));
+  const blk=(d,b)=>{const l=d[b].map(exOf).filter(Boolean);return l.length?'- '+BLOCKS[b]+': '+l.map(e=>e.name+' ('+rx(e)+(e.flag?', carga el antebrazo':'')+')').join('; ')+'\n':''};
+  if(shared.length){t+='\nEn todos los días\n';shared.forEach(b=>t+=blk(md[0],b))}
+  md.forEach(d=>{t+='\n'+d.name+' · '+d.focus+'\n';['cal','est','fue'].filter(b=>!shared.includes(b)).forEach(b=>t+=blk(d,b))});
+  const duv=S.days.filter(d=>d.plan==='duvan');if(duv.length)t+='\nDías del plan de Duván (no rotan): '+duv.map(d=>d.name+' · '+d.focus).join(', ')+'\n';
+  t+='\n## Semanas\n';
+  for(let m=weekStart(f);iso(m)<=tk;m.setDate(m.getDate()+7)){const e=new Date(m);e.setDate(m.getDate()+7);const n=new Set(S.sessions.filter(s=>{const d=parseISO(s.date);return d>=m&&d<e}).map(s=>s.date)).size;t+='- Semana del '+iso(m)+': '+n+' de '+S.settings.goal+' días'+(iso(new Date(e.getTime()-864e5))>tk?' (en curso)':'')+'\n'}
+  t+='\n## Sesiones\nFuerza: kg × reps por serie. Estiramiento y calentamiento: reps o segundos. Solo series marcadas como hechas.\n';
+  const ss=S.sessions.filter(s=>s.date>=from&&s.date<=tk);
+  ss.forEach(s=>{t+='\n'+dl(s.date)+': '+s.dayName+' · '+s.focus+', '+s.min+' min'+(s.danced?', tras bailar':'')+(s.records&&s.records.length?'. Récords: '+s.records.map(r=>r.name+' '+fmtNum(r.kg)+' kg × '+(r.reps==null?'—':r.reps)).join(', '):'')+'\n';
+    ['cal','est','fue'].forEach(b=>Object.values(s.ex).filter(x=>x.block===b).forEach(x=>{const d=x.sets.filter(q=>q.done);if(!d.length)return;
+      t+='  - '+BLOCKS[b]+' · '+x.name+': '+d.map(q=>b==='fue'&&q.kg!=null?fmtNum(q.kg)+'×'+(q.reps==null?'—':q.reps):q.secs?q.secs+' s':q.reps!=null?q.reps+' reps':'hecha').join(', ')+'\n'}))});
+  if(!ss.length)t+='\nNo hay sesiones en estas 4 semanas.\n';
+  t+='\n## Medidas (todas las registradas)\n';
+  const ms=S.measures.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  if(!ms.length)t+='Todavía no he registrado medidas.\n';
+  else{const lab={};S.flexTests.forEach(x=>lab[x.id]=x.name+' ('+x.unit+(x.better==='down'?', menos es mejor':'')+')');S.bodyFields.forEach(x=>lab[x.id]=x.name+' ('+x.unit+')');
+    ms.forEach(m=>{t+='- '+m.date+': '+Object.keys(m.v).map(k=>(lab[k]||k)+' '+fmtNum(m.v[k])).join(', ')+'\n'})}
+  t+='\nAnaliza mi progreso con lo que dicen tus instrucciones.';
+  return t;
+}
+function aiHTML(){return head('Copiar para Claude','Si no se copió solo, mantén presionado el texto, selecciona todo y cópialo.')+'<div class="field"><label for="aiout">Resumen</label><textarea id="aiout" readonly style="min-height:260px;font-family:var(--mono);font-size:11px">'+esc(sheetState.text)+'</textarea></div>'}
 function viewProgreso(){
   const total=S.sessions.length;
   const metricCard=(name,unit,ms,better)=>{const last=ms[ms.length-1];const dl=ms.length>1?last.y-ms[0].y:null;return '<div class="card" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span class="mono" style="font-size:10px">'+esc(name)+'</span>'+(dl!=null?'<span class="delta num">'+(dl>0?'+':'')+fmtNum(dl)+' '+esc(unit)+'</span>':'')+'</div><span class="stat num">'+fmtNum(last.y)+' <small>'+esc(unit)+'</small></span>'+lineChart(ms.slice(-20),unit,better)+'</div>'};
@@ -524,6 +556,7 @@ function viewProgreso(){
   '<div style="display:flex;flex-direction:column;gap:10px"><span class="mono">Flexibilidad</span>'+(flex.length?flex.map(x=>metricCard(x.t.name,x.t.unit,x.ms,x.t.better)).join(''):'<div class="empty"><b>Sin medidas de flexibilidad todavía.</b> Las pruebas son sugerencias; cámbialas en Registrar medidas › Editar pruebas.</div>')+'</div>'+
   '<div style="display:flex;flex-direction:column;gap:10px"><span class="mono">Fuerza</span>'+strength+'</div>'+
   '<div style="display:flex;flex-direction:column;gap:10px"><span class="mono">Cuerpo</span>'+(body.length?body.map(x=>metricCard(x.f.name,x.f.unit,x.ms,'none')).join(''):'<div class="empty"><b>Sin medidas corporales todavía.</b> Una vez al mes es suficiente para ver tendencias.</div>')+'</div>'+
+  '<div style="display:flex;flex-direction:column;gap:10px"><span class="mono">Segunda opinión</span><p class="quip" style="font-size:14px">Copia tus últimas 4 semanas (rutina, series, pesos y medidas) y pégalas en tu proyecto de Claude. Lo que tenga que ver con el codo, confírmalo con Santiago.</p><button class="ghostbtn" data-a="aicopy">Copiar para Claude</button></div>'+
   '<div style="display:flex;flex-direction:column;gap:2px"><span class="mono">Sesiones recientes</span><div class="list">'+(recent.length?recent.map(s=>'<button class="row" data-a="sessinfo" data-v="'+s.id+'"><div class="t"><b>'+esc(s.dayName)+' · '+esc(s.focus)+'</b><span>'+fmtD(s.date)+' · '+s.min+' min · '+(s.danced?'tras bailar · ':'')+Object.values(s.ex).reduce((a,x)=>a+x.sets.filter(t=>t.done).length,0)+' series</span></div>'+I.chev+'</button>').join(''):'<p class="quip" style="padding:12px 0">Nada por aquí. Todavía.</p>')+'</div></div>'+
   (S.measures.length?'<div style="display:flex;flex-direction:column;gap:2px"><span class="mono">Medidas registradas</span><div class="list">'+S.measures.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10).map(m=>'<button class="row" data-a="measure" data-v="'+m.id+'"><div class="t"><b>'+fmtD(m.date)+'</b><span>'+Object.keys(m.v).length+' medidas</span></div>'+I.chev+'</button>').join('')+'</div></div>':'')+
   '</div></div>';
@@ -595,8 +628,8 @@ function backupHTML(){
   '<div class="field"><label for="bin">Restaurar desde una copia</label><textarea id="bin" placeholder="Pega aquí el texto de una copia" style="min-height:90px;font-family:var(--mono);font-size:11px"></textarea></div>'+
   (sheetState.confirm?'<div class="confirm"><span style="flex:1">Esto reemplaza todos tus datos actuales.</span><button class="ghostbtn" style="height:40px" data-a="noconfirm">Cancelar</button><button class="ghostbtn danger" style="height:40px" data-a="restore">Reemplazar</button></div>':'<button class="ghostbtn" data-a="askrestore">Restaurar</button>');
 }
-function rerenderSheet(){if(!sheetState)return;const f={day:dayEditorHTML,ex:exEditorHTML,measure:measureHTML,sess:sessInfoHTML,backup:backupHTML,account:accountHTML}[sheetState.kind];refreshSheet(f())}
-function showSheet(st){sheetState=st;const f={day:dayEditorHTML,ex:exEditorHTML,measure:measureHTML,sess:sessInfoHTML,backup:backupHTML,account:accountHTML}[st.kind];openSheet(f())}
+function rerenderSheet(){if(!sheetState)return;const f={day:dayEditorHTML,ex:exEditorHTML,measure:measureHTML,sess:sessInfoHTML,backup:backupHTML,account:accountHTML,ai:aiHTML}[sheetState.kind];refreshSheet(f())}
+function showSheet(st){sheetState=st;const f={day:dayEditorHTML,ex:exEditorHTML,measure:measureHTML,sess:sessInfoHTML,backup:backupHTML,account:accountHTML,ai:aiHTML}[st.kind];openSheet(f())}
 
 /* ---------- sesión guiada ---------- */
 let T=null,tickH=null,wakeLock=null,audioCtx=null;
@@ -787,6 +820,7 @@ const A={
     try{const r=await cloud.sb.auth.signInWithPassword({email,password});if(r.error){msg(authErr(r.error));return}cloud.session=r.data.session;closeTop();render();toast('Listo. Ahora tus datos se guardan en la nube');setTimeout(pull,0)}catch(e){msg(navigator.onLine===false?'Sin internet. Intenta cuando tengas conexión.':'No se pudo conectar. Intenta de nuevo.')}},
   syncnow:async()=>{await (cloud.dirty?push():pull());rerenderSheet()},
   signout:async()=>{try{await cloud.sb.auth.signOut()}catch(e){}cloud.session=null;setSync('nologin');closeTop();render();toast('Sesión cerrada')},
+  aicopy:()=>{const t=aiText();const fb=()=>showSheet({kind:'ai',text:t});try{navigator.clipboard.writeText(t).then(()=>toast('Copiado. Pégalo en tu proyecto de Claude')).catch(fb)}catch(e){fb()}},
   closesheet:()=>closeTop(),
   scrim:(el,ev)=>{if(ev.target===el)closeTop()}
 };

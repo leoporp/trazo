@@ -9,7 +9,7 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 - Español, casual y directo. Honesto, sin condescendencia.
 - Si no tienes más de 90 % de certeza de lo que quiere, hazle preguntas cerradas antes (con una opción recomendada).
 - Nada de afirmaciones de salud como certezas; su fisio es Santiago (epicondilitis en los codos: por eso los ejercicios marcados "antebrazo").
-- Después de cada cambio: `node tests/sync.test.js`, commit con atribución, `git push origin main` y decirle que cierre y abra la app.
+- Después de cada cambio: `node tests/sync.test.js` y `node tests/copiar-claude.test.js`, commit con atribución, `git push origin main` y decirle que cierre y abra la app.
 - Respuestas finales cortas, en lenguaje de usuario.
 
 ## Arquitectura
@@ -28,6 +28,7 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 - Sesión: calentamiento → estiramiento → fuerza, con saltos libres entre bloques (no siempre entrena en el mismo orden).
 - Plan propio Torso A / Pierna A / Torso B / Pierna B que rota; selector "Duván hace…" en Hoy para coincidir con él; "Hoy bailé" para que esa sesión no cuente para subir peso ni récords.
 - Progresión: si completó el rango en todas las series, sugiere +2,5 kg (1 kg en laterales).
+- **Segunda opinión con IA** (Progreso → "Copiar para Claude", igual que en Fibra): copia un resumen en texto de las últimas 4 semanas (rutina, sin repetir calentamiento y estiramiento si son iguales en todos los días; semanas; sesiones con kg × reps; todas las medidas). Leo lo pega en un proyecto suyo de Claude con instrucciones de "entrenador". Esas instrucciones NO van en este repo (es público y tienen datos de salud). Solo copiar; si el portapapeles falla, se abre una hoja con el texto.
 
 ## Pendiente
 
