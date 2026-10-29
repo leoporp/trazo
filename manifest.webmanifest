@@ -1,0 +1,18 @@
+{
+  "name": "Trazo",
+  "short_name": "Trazo",
+  "description": "Gym: calentamiento, estiramiento y fuerza, con registro de series y medidas.",
+  "lang": "es-CO",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECE8E1",
+  "theme_color": "#ECE8E1",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
