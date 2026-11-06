@@ -44,8 +44,10 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 
 - **Buscador al cambiar**: un solo campo filtra la biblioteca del bloque (sin tildes, por palabras) y, si no hay uno con ese nombre exacto, ofrece "+ Crear «…»".
 - **Calentamiento libre** (pedido por Leo): en la sesión es un paso virtual `_cal` (`WARM`, `exOf('_cal')`) con un solo botón "Ya calenté"; se marca solo al ir a estirar/fuerza o al marcar cualquier serie (`autoWarm`). "Siguiente" nunca vuelve al calentamiento (`nextIdx`). `d.cal` sigue en los datos pero ya no se usa ni se muestra en Rutina; ~10 min fijos (`WARM_MIN`).
-- **Fichas** (dibujo + ¿Cómo se hace? para ejercicios creados por Leo): un ejercicio sin `how` es "sin ficha" (`sinFicha`); Progreso muestra "Pedir fichas (N)" que copia la lista. Leo la pega en el chat; Claude agrega la entrada a `FICHAS` (por nombre normalizado, con alias en `n`) y, si hace falta, un dibujo nuevo en `SIL`. `migrate()` llama `applyFichas` al cargar y al traer de la nube; solo rellena si el ejercicio no tiene pasos (no pisa lo editado). Ya está: Press declinado (`SIL.declinado`).
+- **Fichas** (dibujo + ¿Cómo se hace? para ejercicios creados por Leo): un ejercicio sin `how` es "sin ficha" (`sinFicha`); Progreso muestra "Pedir fichas (N)" que copia la lista. Leo la pega en el chat; Claude agrega la entrada a `FICHAS` (por nombre normalizado, con alias en `n`) y, si hace falta, un dibujo nuevo en `SIL`. `migrate()` llama `applyFichas` al cargar y al traer de la nube; solo rellena si el ejercicio no tiene pasos (no pisa lo editado). Ya están: Press declinado (`SIL.declinado`), Seated dip = fondos sentado en máquina (`SIL.dipmaq`).
 - `norm()` va antes de `FICHAS` porque `migrate` corre al cargar (TDZ: si se define después, la app no abre).
+
+- **Rango mínimo en gráficas** (pedido por Leo: milímetros no deben verse como cambios grandes): `SPAN`/`minSpan`/`yRange`. Peso 10 kg, cintura/cadera/pecho 8 cm, muslo 6, brazo 4, otras en cm 6, flexibilidad en ° 20, kg de ejercicios 10. Si los datos superan el rango, se usa el rango real.
 
 ## Pendiente
 
