@@ -9,7 +9,7 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 - Español, casual y directo. Honesto, sin condescendencia.
 - Si no tienes más de 90 % de certeza de lo que quiere, hazle preguntas cerradas antes (con una opción recomendada).
 - Nada de afirmaciones de salud como certezas; su fisio es Santiago (epicondilitis en los codos: por eso los ejercicios marcados "antebrazo").
-- Después de cada cambio: correr `node tests/sync.test.js`, `node tests/copiar-claude.test.js` y `node tests/casos-borde.test.js`; si es visual, `node tests/pantallas.js nombre` (claro y oscuro; `VW=360 VH=740` para celular pequeño) y mirar `tests/shots/nombre/`. Luego commit con atribución, `git push origin main` y decirle que cierre y abra la app.
+- Después de cada cambio: correr `node tests/sync.test.js`, `node tests/copiar-claude.test.js` y `node tests/casos-borde.test.js` y `node tests/cambiar-ejercicio.test.js`; si es visual, `node tests/pantallas.js nombre` (claro y oscuro; `VW=360 VH=740` para celular pequeño) y mirar `tests/shots/nombre/`. Luego commit con atribución, `git push origin main` y decirle que cierre y abra la app.
 - Respuestas finales cortas, en lenguaje de usuario.
 
 ## Arquitectura
@@ -39,6 +39,8 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 - Sesión olvidada de otro día: Hoy pregunta si guardarla con su fecha o descartarla; la duración se cuenta hasta la última serie marcada (`draft.last`), máximo 4 h.
 - "Arrancar" va fijo abajo en Hoy, encima de la barra; los avisos salen arriba para no tapar botones.
 - **Segunda opinión con IA** (Progreso → "Copiar para Claude", igual que en Fibra): copia un resumen en texto de las últimas 4 semanas (rutina, sin repetir calentamiento y estiramiento si son iguales en todos los días; semanas; sesiones con kg × reps; todas las medidas). Leo lo pega en un proyecto suyo de Claude con instrucciones de "entrenador". Esas instrucciones NO van en este repo (es público y tienen datos de salud). Solo copiar; si el portapapeles falla, se abre una hoja con el texto.
+
+- **Cambiar ejercicio en la sesión** (máquina ocupada; pedido por Leo): botón bajo "¿Cómo se hace?" abre la lista de la biblioteca del mismo bloque o crea una variante con solo el nombre (copia series, reps, descanso, dibujo y marca de antebrazo del actual). Solo cambia el paso de esta sesión; la rutina del día no se toca. Cada variante es un ejercicio aparte → historial de peso, sugerencia y récords separados (Leo lo quiso así: el peso no es comparable). Si el original no tenía series marcadas, se descarta de la sesión; si tenía, se guarda igual. Test: `node tests/cambiar-ejercicio.test.js`.
 
 ## Pendiente
 

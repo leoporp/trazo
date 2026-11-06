@@ -865,10 +865,19 @@ function showSheet(st){sheetState=st;const f={day:dayEditorHTML,ex:exEditorHTML,
 
 /* ---------- sesión guiada ---------- */
 let T=null,tickH=null,wakeLock=null,audioCtx=null;
+function exLog(id,danced){const e=exOf(id);if(!e)return null;const n=e.sets*(e.side?2:1);const last=e.block==='fue'?lastSetsFor(id):null;const sg=e.block==='fue'?suggest(e,danced):null;
+  return {sets:Array.from({length:n},(_,k)=>{const lp=last&&last[Math.min(k,last.length-1)];return {kg:null,reps:null,done:false,ph:sg?sg.kg:(lp&&lp.kg!=null?lp.kg:null),prev:lp?lp:null}})}}
+/* Cambiar el ejercicio solo en esta sesión (la máquina estaba ocupada). Cada variante es un ejercicio aparte, con su propio historial. */
+function swapStep(newId){const D=S.draft;if(!D)return;const st=D.steps[D.step];const old=st.id;if(old===newId)return;
+  if(T&&T.id===old)stopTimer();
+  const L=D.log[old];if(L&&!L.sets.some(x=>x.done))delete D.log[old];
+  if(!D.log[newId]){const l=exLog(newId,D.danced);if(!l)return;D.log[newId]=l}
+  const dup=D.steps.findIndex((x,i)=>x.id===newId&&i!==D.step);if(dup>=0){D.steps.splice(dup,1);if(dup<D.step)D.step--}
+  D.steps[D.step].id=newId;if(D.prefer===old)D.prefer=newId;swapOpen=false;howOpen=false;save();renderSession();const o=document.querySelector('.ov');if(o)o.scrollTop=0}
+let swapOpen=false;
 function buildDraft(d){
   const steps=[];['cal','est','fue'].forEach(b=>d[b].forEach(id=>exOf(id)&&steps.push({t:b,id})));
-  const log={};[...d.cal,...d.est,...d.fue].forEach(id=>{const e=exOf(id);if(!e)return;const n=e.sets*(e.side?2:1);const last=e.block==='fue'?lastSetsFor(id):null;const sg=e.block==='fue'?suggest(e,S.dance===iso()):null;
-    log[id]={sets:Array.from({length:n},(_,k)=>{const lp=last&&last[Math.min(k,last.length-1)];return {kg:null,reps:null,done:false,ph:sg?sg.kg:(lp&&lp.kg!=null?lp.kg:null),prev:lp?lp:null}})}});
+  const log={};[...d.cal,...d.est,...d.fue].forEach(id=>{const l=exLog(id,S.dance===iso());if(l)log[id]=l});
   return {dayId:d.id,start:Date.now(),step:0,steps,log,trans:false,transShown:false,prefer:S.prefer||null,danced:S.dance===iso()};
 }
 function startSession(){
@@ -918,6 +927,12 @@ function renderSession(){
   let body='<div class="silbox">'+silSVG(e.sil)+'<span class="hint">'+(e.block==='cal'?'a soltar el cuerpo':isTime?'mantén y respira':isFue?'controla la bajada':'lento y con control')+'</span></div>'+
   '<div style="display:flex;flex-direction:column;gap:4px"><span class="blabel" style="--bc:'+BCOL[e.block]+'"><i></i>'+BSHORT[e.block]+' · ejercicio '+pos+' de '+inBlock.length+'</span><h1 class="big" style="font-size:34px;line-height:1">'+esc(e.name)+'</h1><p class="quip" style="font-size:14px">'+sub+'</p>'+(kgLine&&e.tip?'<p class="quip" style="font-size:13px;color:var(--faint)">'+esc(e.tip)+'</p>':'')+'</div>'+
   ((e.how&&e.how.length)||e.ojo?'<button class="howbtn" data-a="how" aria-expanded="'+howOpen+'">¿Cómo se hace?'+I.down+'</button>'+(howOpen?'<div class="how">'+(e.how&&e.how.length?'<ol>'+e.how.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>':'')+(e.ojo?'<p><b>Ojo:</b> '+esc(e.ojo)+'</p>':'')+'</div>':''):'')+
+  '<button class="howbtn" data-a="swap" aria-expanded="'+swapOpen+'">'+(e.block==='fue'?'¿Máquina ocupada? Cambiar ejercicio':'Cambiar ejercicio')+I.down+'</button>'+
+  (swapOpen?(()=>{const inS=new Set(D.steps.map(x=>x.id));const opts=Object.values(S.ex).filter(x=>x.block===e.block&&x.id!==e.id).sort((a,c)=>a.name.localeCompare(c.name,'es'));
+    return '<div class="how"><span class="mono" style="font-size:10px">Solo cambia en esta sesión · tu rutina queda igual</span>'+
+    '<div style="display:flex;gap:8px"><input id="swapname" type="text" placeholder="Ej. Press declinado en máquina" style="flex:1;min-width:0" aria-label="Nombre del ejercicio nuevo"><button class="chip" data-a="swapnew">Crear</button></div>'+
+    '<span style="font-size:12px;color:var(--muted)">El nuevo copia series, reps y descanso de '+esc(e.name)+' y lleva su propio historial de peso.</span>'+
+    (opts.length?'<div class="list">'+opts.map(x=>'<button class="row" data-a="swapto" data-v="'+x.id+'" style="padding:10px 0"><div class="t"><b>'+esc(x.name)+'</b><span>'+exSummary(x)+(inS.has(x.id)?' · ya está en esta sesión':'')+'</span></div><span class="tag">usar</span></button>').join('')+'</div>':'')+'</div>'})():'')+
   (e.flag?'<div class="warnline">'+I.warn+'<span>Carga el antebrazo. Si el codo molesta, baja el peso o sáltalo; lo de Fibra va primero.</span></div>':'');
   if(isFue&&!isTime){
     body+='<div class="sets"><div class="sethead"><span>SERIE</span><span>ANTERIOR</span><span style="text-align:center">KG</span><span style="text-align:center">REPS</span><span></span></div>'+
@@ -1065,6 +1080,12 @@ const A={
   signout:async()=>{try{await cloud.sb.auth.signOut()}catch(e){}cloud.session=null;setSync('nologin');closeTop();render();toast('Sesión cerrada')},
   aicopy:()=>{const t=aiText();const fb=()=>showSheet({kind:'ai',text:t});try{navigator.clipboard.writeText(t).then(()=>toast('Copiado. Pégalo en tu proyecto de Claude')).catch(fb)}catch(e){fb()}},
   how:()=>{howOpen=!howOpen;renderSession()},
+  swap:()=>{swapOpen=!swapOpen;renderSession()},
+  swapto:el=>swapStep(el.dataset.v),
+  swapnew:()=>{const inp=document.getElementById('swapname');const name=(inp&&inp.value||'').trim();if(!name){toast('Ponle un nombre, ej. Press declinado en máquina');inp&&inp.focus();return}
+    const cur=exOf(S.draft.steps[S.draft.step].id);const same=Object.values(S.ex).find(x=>x.block===cur.block&&x.name.trim().toLowerCase()===name.toLowerCase());if(same){swapStep(same.id);return}
+    const e={id:'x'+uid(),name,block:cur.block,kind:cur.kind,sets:cur.sets,target:cur.target,side:!!cur.side,rest:cur.rest,tip:'',sil:cur.sil,flag:!!cur.flag};if(cur.grp)e.grp=cur.grp;
+    S.ex[e.id]=e;swapStep(e.id);toast('Listo: '+name+' con historial propio')},
   closesheet:()=>closeTop(),
   scrim:(el,ev)=>{if(ev.target===el)closeTop()}
 };
