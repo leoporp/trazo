@@ -86,7 +86,7 @@ server.listen(8798,async()=>{
   await p.locator('[data-a="closecard"]').click();
 
   // 5. Ejercicio borrado a mitad de sesión
-  await p.locator('[data-a="start"]').click(); await p.waitForTimeout(150); const first=(await S()).draft.steps[0].id; await p.locator('[data-a="exitsession"]').click();
+  await p.locator('[data-a="start"]').click(); await p.waitForTimeout(150); const first=(await S()).draft.steps.find(x=>x.id!=='_cal').id; await p.locator('[data-a="exitsession"]').click();
   await p.locator('[data-a="tab"][data-v="rutina"]').click(); await p.locator('[data-a="editex"][data-v="'+first+'"]').click();
   await p.locator('[data-a="askconfirm"]').click(); await p.locator('[data-a="delex"]').click(); await p.waitForTimeout(150);
   await p.locator('[data-a="tab"][data-v="hoy"]').click(); await p.locator('[data-a="start"]').click(); await p.waitForTimeout(200);

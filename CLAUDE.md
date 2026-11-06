@@ -42,6 +42,11 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 
 - **Cambiar ejercicio en la sesión** (máquina ocupada; pedido por Leo): botón bajo "¿Cómo se hace?" abre la lista de la biblioteca del mismo bloque o crea una variante con solo el nombre (copia series, reps, descanso, dibujo y marca de antebrazo del actual). Solo cambia el paso de esta sesión; la rutina del día no se toca. Cada variante es un ejercicio aparte → historial de peso, sugerencia y récords separados (Leo lo quiso así: el peso no es comparable). Si el original no tenía series marcadas, se descarta de la sesión; si tenía, se guarda igual. Test: `node tests/cambiar-ejercicio.test.js`.
 
+- **Buscador al cambiar**: un solo campo filtra la biblioteca del bloque (sin tildes, por palabras) y, si no hay uno con ese nombre exacto, ofrece "+ Crear «…»".
+- **Calentamiento libre** (pedido por Leo): en la sesión es un paso virtual `_cal` (`WARM`, `exOf('_cal')`) con un solo botón "Ya calenté"; se marca solo al ir a estirar/fuerza o al marcar cualquier serie (`autoWarm`). "Siguiente" nunca vuelve al calentamiento (`nextIdx`). `d.cal` sigue en los datos pero ya no se usa ni se muestra en Rutina; ~10 min fijos (`WARM_MIN`).
+- **Fichas** (dibujo + ¿Cómo se hace? para ejercicios creados por Leo): un ejercicio sin `how` es "sin ficha" (`sinFicha`); Progreso muestra "Pedir fichas (N)" que copia la lista. Leo la pega en el chat; Claude agrega la entrada a `FICHAS` (por nombre normalizado, con alias en `n`) y, si hace falta, un dibujo nuevo en `SIL`. `migrate()` llama `applyFichas` al cargar y al traer de la nube; solo rellena si el ejercicio no tiene pasos (no pisa lo editado). Ya está: Press declinado (`SIL.declinado`).
+- `norm()` va antes de `FICHAS` porque `migrate` corre al cargar (TDZ: si se define después, la app no abre).
+
 ## Pendiente
 
 - No se puede: avisar con el celular bloqueado cuando termina el descanso (es una web app sin servidor de notificaciones). Con la pantalla prendida suena y vibra.
