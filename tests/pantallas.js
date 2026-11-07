@@ -20,7 +20,7 @@ function seed(){
     D.est.slice(0,3).forEach(id=>{const e=S.ex[id];ex[id]={name:e.name,block:'est',sets:Array.from({length:e.sets*(e.side?2:1)},()=>({kg:null,reps:e.kind==='time'?null:8,done:true,secs:e.kind==='time'?45:null}))}});
     const st=day(n);st.setHours(18,0,0,0);return {id:'s'+n,date:iso(st),start:st.getTime(),min:62+n%7,dayId:D.id,dayName:D.name,focus:D.focus,n:0,ex,records:[],danced:!!danced}};
   S.sessions=[mk(20,0,30),mk(18,1,40),mk(15,2,20),mk(13,3,30,true),mk(8,0,32.5),mk(6,1,42.5),mk(1,2,22.5)];
-  S.sessions.forEach((s,i)=>s.n=i+1); S.next=3;
+  S.sessions.forEach((s,i)=>s.n=i+1); S.next=3; S.danceDays=[iso(day(13)),iso(day(10)),iso(day(4))];
   S.measures=[{id:'m1',date:iso(day(21)),v:{p1:-12,t2:62,t3:60,peso:71.5,cintura:82}},{id:'m2',date:iso(day(11)),v:{p1:-9,t2:66,t3:63,peso:71}},{id:'m3',date:iso(day(2)),v:{p1:-7,t2:68,t3:66,peso:70.6,cintura:81}}];
   localStorage.setItem('trazo_v1',JSON.stringify(S)); return true;
 }
@@ -61,7 +61,7 @@ server.listen(8796,async()=>{
   await p.locator('[data-a="editex"]').first().click(); await shot('24-editar-ejercicio'); await p.locator('[data-a="closesheet"]').click();
   await p.locator('[data-a="account"]').click(); await shot('25-cuenta'); await p.locator('[data-a="closesheet"]').click();
   // progreso
-  await p.locator('[data-a="tab"][data-v="progreso"]').click(); await shot('30-progreso'); await p.mouse.wheel(0,800); await shot('31-progreso-medio'); await p.mouse.wheel(0,1200); await shot('32-progreso-abajo'); await p.mouse.wheel(0,-4000);
+  await p.locator('[data-a="tab"][data-v="progreso"]').click(); await shot('30-progreso'); await p.locator('.calnav [data-v="-1"]').click(); await shot('30b-calendario-mes-anterior'); await p.locator('.calnav [data-v="1"]').click(); await p.locator('.ch').first().scrollIntoViewIfNeeded(); await p.locator('.ch').first().locator('.hit').nth(1).dispatchEvent('click'); await shot('30c-grafica-punto'); await p.mouse.wheel(0,800); await shot('31-progreso-medio'); await p.mouse.wheel(0,1200); await shot('32-progreso-abajo'); await p.mouse.wheel(0,-4000);
   await p.locator('.cta[data-a="measure"]').click(); await shot('33-medidas'); await p.locator('[data-a="closesheet"]').click();
   await p.locator('[data-a="sessinfo"]').first().click(); await shot('34-sesion-detalle'); await p.locator('[data-a="closesheet"]').click();
   // sesión olvidada de ayer
