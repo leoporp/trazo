@@ -9,7 +9,7 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 - Español, casual y directo. Honesto, sin condescendencia.
 - Si no tienes más de 90 % de certeza de lo que quiere, hazle preguntas cerradas antes (con una opción recomendada).
 - Nada de afirmaciones de salud como certezas; su fisio es Santiago (epicondilitis en los codos: por eso los ejercicios marcados "antebrazo").
-- Después de cada cambio: correr `node tests/sync.test.js`, `node tests/copiar-claude.test.js` y `node tests/casos-borde.test.js` y `node tests/cambiar-ejercicio.test.js` y `node tests/fila-ejercicios.test.js` y `node tests/calendario.test.js`; si es visual, `node tests/pantallas.js nombre` (claro y oscuro; `VW=360 VH=740` para celular pequeño) y mirar `tests/shots/nombre/`. Luego commit con atribución, `git push origin main` y decirle que cierre y abra la app.
+- Después de cada cambio: correr `node tests/sync.test.js`, `node tests/copiar-claude.test.js` y `node tests/casos-borde.test.js` y `node tests/cambiar-ejercicio.test.js` y `node tests/fila-ejercicios.test.js` y `node tests/calendario.test.js` y `node tests/barra-parecidos-estirar.test.js`; si es visual, `node tests/pantallas.js nombre` (claro y oscuro; `VW=360 VH=740` para celular pequeño) y mirar `tests/shots/nombre/`. Luego commit con atribución, `git push origin main` y decirle que cierre y abra la app.
 - Respuestas finales cortas, en lenguaje de usuario.
 
 ## Arquitectura
@@ -51,6 +51,10 @@ Este archivo es el traspaso entre chats: léelo antes de tocar algo.
 
 - **Calendario de actividad** (pedido por Leo, como el de Duván): arriba en Progreso, por mes (lunes primero, sin meses futuros). Gym = día relleno azul (hay sesión ese día); baile = borde `--dance` (malva); ambos = relleno + anillo. Tocar un día pasado abre una hoja con "Bailé este día" y las sesiones de ese día. Los días de baile viven en `S.danceDays` (fechas ISO), aparte de las sesiones: sirve para días que baila y no va al gym. `fillDance` (en `migrate`) lo arma la primera vez con las sesiones `danced` y `S.dance`. "Hoy bailé" y el calendario usan `setDance` (hoy también toca `S.dance` y `draft.danced`). `mergeLocal` une los días de los dos lados. "Copiar para Claude" incluye los días de baile y cuántos por semana. Un solo tipo de baile (Leo no quiso distinguir ballet/contemporáneo).
 - **Tocar un punto en las gráficas** (`chartTip`): etiqueta con valor y fecha; fuerza muestra la mejor serie como kg × reps. Tocar el mismo punto la quita.
+
+- **Barra** (pedido por Leo, no sabe cuánto pesa la barra): `e.bar` = "Incluye barra"; Leo anota solo la suma de los discos de los dos lados. La app NO suma la barra. Chulito en la sesión (encima de las series) y en Rutina › ejercicio; la columna dice DISCOS. `barInit` (una vez, `S.barInit`) lo prende en banca, sentadilla, hip thrust y rumano (`DEFBAR`) sin pisar lo que Leo quitó. La sesión guarda `bar:true` por ejercicio y "Copiar para Claude" aclara "kg = solo discos". Si algún día sabe el peso de la barra, se puede agregar.
+- **Parecidos al cambiar ejercicio** (pedido por Leo): `ALT` (por id de fábrica: ids de la biblioteca o claves de `SUST`) y `SUST` (sustitutos con nombre, dibujo, pasos, `bar`, `side`; sus fichas entran a `FICHAS`). `similares(e)` arma la lista: el original si es variante (`e.base`), luego `ALT[base]`, y si no hay lista, la biblioteca del mismo grupo. Tocar un sustituto nuevo lo crea como variante (`swapsust`), con `base` y su propio historial. Debajo sigue "Otro de tu biblioteca" con el buscador.
+- **Estiramiento libre** (pedido por Leo): en el bloque Estirar, botón "Hoy estiré a mi manera" (`D.estFree`) marca todo el bloque como hecho (`stepDone`) sin quitar los ejercicios; se pueden marcar series igual. Al terminar se guarda `ex._est` "Estiramiento libre".
 
 ## Pendiente
 

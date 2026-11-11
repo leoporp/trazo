@@ -130,6 +130,7 @@ h2.sec{margin:0;font-family:var(--display);font-weight:600;font-size:30px;text-t
 .bseg button.on span{color:var(--bg)}
 .bseg button.on small{color:var(--bg);opacity:.7}
 .exr{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.estfree{justify-content:center;width:100%}
 .exr button{flex:none;height:34px;padding:0 11px 0 8px;border-radius:9px;border:1.5px solid var(--rule);font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;max-width:220px}
 .exr button .n{font-family:var(--mono);font-size:11px;color:var(--faint)}
 .exr button em{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -570,16 +571,77 @@ const FICHAS=[
   s:['Ajusta el asiento para que los agarres queden a la altura de la parte baja del pecho.','Engancha las piernas en el soporte y pega la espalda al respaldo, escápulas juntas y pecho arriba.','Empuja hasta casi estirar los brazos, sin bloquear los codos.','Baja en 2 o 3 segundos hasta sentir el estiramiento en el pecho.'],
   o:'Que los hombros no se despeguen del respaldo al empujar: si se van hacia adelante, el trabajo se lo lleva el hombro y no el pecho.'}
 ];
+/* Parecidos para cuando la máquina está ocupada (pedido por Leo). Por ejercicio de fábrica: ids de la biblioteca y sustitutos nuevos.
+   Cada sustituto trae su ficha (dibujo y pasos) y si lleva barra. Se crea como variante aparte al tocarlo. */
+const SUST={
+ pechomaq:{name:'Press de pecho en máquina',sil:'banca',s:['Ajusta el asiento para que los agarres queden a la altura de la mitad del pecho.','Espalda pegada al respaldo, escápulas juntas y pecho arriba.','Empuja hasta casi estirar los brazos, sin bloquear los codos.','Vuelve en 2 o 3 segundos hasta sentir el estiramiento en el pecho.'],o:'Que los hombros no se despeguen del respaldo al empujar.'},
+ bancasmith:{name:'Press de banca en Smith',sil:'banca',bar:1,s:['Banco plano debajo de la barra, que baje a la parte baja del pecho.','Junta las escápulas y saca el pecho; pies firmes en el piso.','Gira la barra para soltarla y bájala controlada al pecho.','Empuja hasta estirar los brazos y gírala para engancharla al terminar.'],o:'Revisa antes de empezar que la barra toque el pecho y no el cuello: mueve el banco hasta que caiga bien.'},
+ bancamanc:{name:'Press plano con mancuernas',sil:'banca',s:['Siéntate con las mancuernas sobre los muslos y acuéstate llevándolas al pecho.','Escápulas juntas y pecho arriba, mancuernas a los lados del pecho.','Empuja hacia arriba juntándolas un poco al final.','Baja en 2 o 3 segundos hasta sentir el estiramiento.'],o:'Muñecas rectas, la mancuerna sobre la palma. Los codos a unos 45° del cuerpo, no abiertos en cruz.'},
+ inclmaq:{name:'Press inclinado en máquina',sil:'inclinado',s:['Ajusta el asiento para que los agarres queden a la altura de la parte alta del pecho.','Espalda pegada al respaldo y pecho arriba.','Empuja hacia arriba y adelante hasta casi estirar los brazos.','Vuelve lento hasta sentir el estiramiento.'],o:'Que no se suban los hombros a las orejas al empujar.'},
+ inclsmith:{name:'Press inclinado en Smith',sil:'inclinado',bar:1,s:['Banco a 30–45° debajo de la barra, que baje a la parte alta del pecho.','Escápulas juntas y pecho arriba.','Baja la barra controlada hasta casi tocar el pecho.','Empuja hasta estirar los brazos.'],o:'Mueve el banco hasta que la barra caiga bajo las clavículas, no en el cuello.'},
+ apermanc:{name:'Aperturas con mancuernas',sil:'aperturas',s:['Acostado en banco plano, mancuernas arriba con las palmas enfrentadas.','Codos apenas doblados y fijos en ese ángulo.','Abre los brazos hacia los lados hasta sentir el estiramiento en el pecho.','Vuelve juntando las mancuernas como si abrazaras un árbol.'],o:'No bajes más allá de la línea de los hombros, y usa menos peso que en la máquina.'},
+ cruce:{name:'Cruce de poleas',sil:'aperturas',s:['Poleas a la altura de los hombros o un poco más arriba, un paso adelante.','Torso apenas inclinado, codos un poco doblados.','Junta las manos al frente del pecho en un arco.','Vuelve lento hasta sentir el estiramiento.'],o:'Los codos no se doblan más durante el movimiento: si lo hacen, se vuelve un press.'},
+ domasist:{name:'Dominadas asistidas en máquina',sil:'jalon',s:['Elige el contrapeso: más contrapeso = más ayuda.','Rodillas en la plataforma, agarre neutro si la máquina lo tiene.','Sube llevando el pecho hacia la barra y los codos hacia las costillas.','Baja controlado hasta estirar los brazos.'],o:'Aquí progresar es BAJAR el contrapeso. Si el codo molesta, usa el agarre neutro.'},
+ jalonuni:{name:'Jalón a una mano en polea alta',sil:'jalon',s:['Polea alta con agarre de una mano, de rodillas o sentado.','Brazo estirado arriba, torso firme.','Baja el codo hacia la cadera llevando la mano al hombro.','Sube lento hasta estirar el brazo.'],o:'No gires el torso para ayudarte.'},
+ remopolea:{name:'Remo en polea baja, agarre neutro',sil:'remomaq',s:['Sentado, pies en la plataforma y rodillas apenas dobladas.','Pecho arriba, brazos estirados al frente.','Lleva el agarre al abdomen apretando los omóplatos.','Vuelve controlado hasta estirar los brazos sin redondear la espalda.'],o:'El torso casi no se mueve: no te balancees hacia atrás para tirar.'},
+ remomanc:{name:'Remo con mancuerna a una mano',sil:'remopecho',s:['Rodilla y mano del mismo lado apoyadas en el banco, espalda recta.','Mancuerna colgando con el brazo estirado.','Sube el codo hacia la cadera, pegado al cuerpo.','Baja lento hasta estirar el brazo.'],o:'Tira con la espalda, no con el bíceps; y no gires el torso al subir.'},
+ pajaromaq:{name:'Pájaro en máquina (reverse fly)',sil:'pajaro',s:['Sentado de frente al respaldo de la máquina de aperturas, agarres a la altura de los hombros.','Brazos estirados al frente, codos apenas doblados.','Abre los brazos hacia atrás apretando la parte de atrás de los hombros.','Vuelve lento.'],o:'No subas los hombros a las orejas ni eches el torso atrás.'},
+ goblet:{name:'Sentadilla goblet',sil:'sentadilla',s:['Mancuerna vertical pegada al pecho, pies al ancho de los hombros.','Baja llevando la cadera atrás y abajo, rodillas en la línea de los pies.','Baja hasta que los codos rocen las rodillas o hasta donde la espalda siga recta.','Sube empujando el piso.'],o:'El pecho no se va hacia adelante: si pasa, baja menos.'},
+ hack:{name:'Sentadilla hack en máquina',sil:'sentadilla',s:['Espalda y hombros contra las almohadillas, pies en el centro de la plataforma.','Suelta los seguros.','Baja hasta que el muslo quede paralelo a la plataforma.','Sube sin bloquear las rodillas y pon los seguros al terminar.'],o:'Los talones no se despegan.'},
+ extuni:{name:'Sentadilla con talones elevados',sil:'sentadilla',s:['Talones sobre un disco o una cuña, mancuerna al pecho.','Torso derecho, rodillas hacia adelante.','Baja lento hasta donde llegues con la espalda recta.','Sube sin rebotar.'],o:'Es para cargar el cuádriceps como en la extensión: rodillas adelante, no la cadera atrás.'},
+ abdpolea:{name:'Abducción en polea',sil:'abductores',s:['Polea baja con tobillera en la pierna de afuera.','De lado a la máquina, apoyado con la mano.','Lleva la pierna hacia afuera sin girar el pie.','Vuelve lento.'],o:'El torso no se inclina para ayudar.'},
+ abdbanda:{name:'Abducción con banda sentado',sil:'abductores',s:['Sentado en el borde del banco, banda por encima de las rodillas.','Pies al ancho de la cadera.','Abre las rodillas hacia afuera contra la banda.','Pausa 1 segundo y vuelve lento.'],o:'Si la banda queda muy suave, inclina el torso un poco hacia adelante para cargar más el glúteo.'},
+ hombromaq:{name:'Press de hombro en máquina',sil:'militar',s:['Ajusta el asiento para que los agarres queden a la altura de los hombros.','Espalda pegada al respaldo, abdomen firme.','Empuja hacia arriba hasta casi estirar los brazos.','Baja controlado hasta la altura de las orejas.'],o:'No arquees la espalda baja para empujar.'},
+ militarsmith:{name:'Press militar en Smith',sil:'militar',bar:1,s:['Banco con respaldo vertical debajo de la barra, que baje frente a la cara.','Agarre un poco más ancho que los hombros, espalda pegada al respaldo.','Empuja hasta casi estirar los brazos.','Baja controlado hasta la altura del mentón.'],o:'La barra no baja detrás de la cabeza.'},
+ latpolea:{name:'Elevaciones laterales en polea',sil:'laterales',s:['Polea baja, agarre en la mano de afuera; cable por delante del cuerpo.','Codo apenas doblado.','Sube el brazo hacia el lado hasta la altura del hombro.','Baja lento en 2 segundos.'],o:'Sin impulso y sin subir el hombro a la oreja.'},
+ latmaq:{name:'Elevaciones laterales en máquina',sil:'laterales',s:['Ajusta el asiento: hombros alineados con el eje de la máquina.','Brazos contra las almohadillas.','Sube los codos hacia los lados hasta la altura de los hombros.','Baja lento.'],o:'Sin subir los hombros a las orejas.'},
+ curlmanc:{name:'Curl con mancuernas',sil:'curl',s:['De pie, mancuernas a los lados, palmas al frente.','Codos pegados a los costados y quietos.','Sube doblando los codos y aprieta arriba.','Baja lento hasta estirar.'],o:'Sin balancear el torso.'},
+ curlmart:{name:'Curl martillo',sil:'curl',s:['De pie, mancuernas a los lados con las palmas enfrentadas.','Codos pegados a los costados.','Sube sin girar las muñecas.','Baja lento hasta estirar.'],o:'También carga el antebrazo: si el codo molesta, baja el peso o sáltalo.'},
+ curlmaq:{name:'Curl de bíceps en máquina',sil:'curl',s:['Ajusta el asiento: la parte de atrás de los brazos apoyada en la almohadilla.','Codos alineados con el eje de la máquina.','Sube doblando los codos y aprieta arriba.','Baja lento hasta casi estirar.'],o:'No despegues los codos de la almohadilla.'},
+ tricsobre:{name:'Extensión de tríceps sobre la cabeza',sil:'triceps',s:['Sentado con respaldo, una mancuerna sostenida con las dos manos por encima de la cabeza.','Codos apuntando al frente, cerca de la cabeza.','Baja la mancuerna detrás de la cabeza doblando los codos.','Sube estirando los brazos.'],o:'Los codos no se abren. Si molesta el codo, baja el peso o cambia de ejercicio.'},
+ tricmaq:{name:'Tríceps en máquina',sil:'dipmaq',s:['Ajusta el asiento: codos apoyados y alineados con el eje de la máquina.','Espalda contra el respaldo.','Empuja hasta estirar los brazos.','Vuelve lento hasta los 90°.'],o:'Que los hombros no se suban al empujar.'},
+ hipmaq:{name:'Hip thrust en máquina',sil:'hipthrust',s:['Espalda alta contra la almohadilla, cinturón o rodillo sobre la cadera.','Pies al ancho de la cadera, rodillas dobladas.','Sube la cadera apretando glúteos hasta quedar en línea.','Pausa 1 segundo y baja controlado.'],o:'Mentón al pecho y costillas abajo: no arquees la espalda arriba.'},
+ hipsmith:{name:'Hip thrust en Smith',sil:'hipthrust',bar:1,s:['Banco detrás, barra del Smith sobre la cadera con almohadilla.','Pies al ancho de la cadera.','Gira la barra para soltarla y sube la cadera apretando glúteos.','Pausa arriba y baja controlado; engancha la barra al final.'],o:'Mentón al pecho y costillas abajo.'},
+ puente:{name:'Puente de glúteo con mancuerna',sil:'hipthrust',s:['Acostado en el piso, rodillas dobladas, mancuerna sobre la cadera.','Pies al ancho de la cadera.','Sube la cadera apretando glúteos.','Pausa 2 segundos arriba y baja lento.'],o:'Con menos peso que el hip thrust, compensa con pausas largas arriba.'},
+ rumanc:{name:'Peso muerto rumano con mancuernas',sil:'rumano',s:['De pie, mancuernas frente a los muslos, rodillas apenas dobladas.','Lleva la cadera atrás con las mancuernas pegadas a las piernas.','Baja hasta sentir los isquios con la espalda recta.','Sube empujando la cadera adelante.'],o:'Si el agarre molesta el codo, usa correas o hazlo en Smith.'},
+ rumsmith:{name:'Peso muerto rumano en Smith',sil:'rumano',bar:1,s:['Barra del Smith frente a los muslos, rodillas apenas dobladas.','Gira la barra para soltarla.','Lleva la cadera atrás y baja hasta sentir los isquios con la espalda recta.','Sube empujando la cadera adelante; engancha al terminar.'],o:'La barra no se separa de las piernas.'},
+ hiperext:{name:'Hiperextensión 45°',sil:'goodmorning',s:['Ajusta el soporte justo debajo del hueso de la cadera.','Brazos cruzados al pecho, espalda recta.','Baja doblando la cadera, no la espalda.','Sube hasta quedar en línea, sin pasarte hacia atrás.'],o:'Para isquios, mantén la espalda recta y piensa en la cadera; si redondeas, trabaja la espalda baja.'},
+ femacost:{name:'Curl femoral acostado',sil:'femoral',s:['Boca abajo, rodilla alineada con el eje de la máquina.','Rodillo justo arriba de los talones.','Dobla las rodillas llevando los talones a los glúteos.','Vuelve lento sin dejar caer el peso.'],o:'La cadera no se despega del banco.'},
+ fempie:{name:'Curl femoral de pie a una pierna',sil:'femoral',s:['De pie en la máquina, rodilla alineada con el eje.','Rodillo detrás del tobillo.','Dobla la rodilla llevando el talón hacia el glúteo.','Vuelve lento.'],o:'El muslo se queda quieto: no subas la rodilla.'},
+ talprensa:{name:'Elevación de talones en prensa',sil:'talones',s:['En la prensa, solo las puntas de los pies en el borde de la plataforma.','Rodillas estiradas sin bloquear, sin soltar los seguros si la máquina los tiene.','Empuja con las puntas lo más lejos que puedas.','Vuelve hasta sentir el estiramiento.'],o:'Sin rebotar abajo.'},
+ talsent:{name:'Elevación de talones sentado',sil:'talones',s:['Sentado, almohadilla sobre los muslos cerca de las rodillas.','Puntas de los pies en el borde.','Sube los talones lo más alto que puedas, pausa arriba.','Baja hasta sentir el estiramiento.'],o:'Sentado carga más el sóleo; complementa, no reemplaza del todo al de pie.'},
+ bulgsmith:{name:'Sentadilla búlgara en Smith',sil:'bulgara',bar:1,side:1,s:['Barra del Smith en la espalda alta, pie de atrás sobre un banco.','Pie de adelante lo bastante lejos para que la rodilla no se vaya muy adelante.','Baja controlado hasta que la rodilla de atrás casi toque el piso.','Sube empujando con la pierna de adelante.'],o:'Así no sostienes mancuernas: cuida el codo.'},
+ zancatras:{name:'Zancada hacia atrás',sil:'zancada',side:1,s:['De pie, mancuernas a los lados o sin peso.','Da un paso largo atrás y baja la rodilla de atrás hacia el piso.','Torso derecho, rodilla de adelante en línea con el pie.','Vuelve empujando con la pierna de adelante.'],o:'Si sostener las mancuernas molesta el codo, hazla sin peso o en Smith.'},
+ dipsent:{name:'Fondos sentado en máquina'},
+ declmaq:{name:'Press declinado en máquina'},
+ stepup:{name:'Subida al banco (step-up)',sil:'zancada',side:1,s:['Frente a un banco estable, un pie arriba entero.','Sube empujando con la pierna de arriba, no con la de abajo.','Quédate arriba un segundo.','Baja lento con la misma pierna.'],o:'No te impulses con el pie de abajo.'}
+};
+const ALT={f1:['pechomaq','bancasmith','bancamanc','f6'],f6:['inclmaq','inclsmith','f1'],f8:['cruce','apermanc'],f21:['dipsent','declmaq','tricmaq'],
+ f4:['domasist','jalonuni','f2'],f2:['remopolea','remomanc','f7'],f7:['f2','remopolea','remomanc'],f9:['pajaromaq','f22'],f22:['pajaromaq','f9'],
+ f11:['hack','f12','goblet'],f12:['hack','f11','goblet'],f13:['extuni','hack'],f23:['abdpolea','abdbanda'],
+ f3:['hombromaq','militarsmith'],f5:['latpolea','latmaq'],f10:['curlmaq','curlmanc','curlmart'],f24:['tricmaq','tricsobre','dipsent'],
+ f16:['hipmaq','hipsmith','puente'],f17:['rumanc','rumsmith','hiperext'],f14:['femacost','fempie'],f15:['talprensa','talsent'],f18:['bulgsmith','zancatras','stepup']};
+Object.values(SUST).filter(x=>x.s).forEach(x=>FICHAS.push({n:[norm(x.name)],sil:x.sil,s:x.s,o:x.o}));
+const DEFBAR=['f1','f11','f16','f17'];
+/* Parecidos de un ejercicio: de su original (si es variante) y, si no hay lista, los de la biblioteca de su mismo grupo. */
+function similares(e){const base=e.base||e.id;const out=[],seen=new Set([e.id]);
+  const byName=n=>Object.values(S.ex).find(x=>x.block===e.block&&norm(x.name)===norm(n));
+  const push=o=>{const k=o.id||'n:'+norm(o.name);if(seen.has(k))return;seen.add(k);if(o.id)seen.add('n:'+norm(o.name));out.push(o)};
+  if(base!==e.id&&S.ex[base])push(S.ex[base]);
+  (ALT[base]||[]).forEach(k=>{if(S.ex[k]){if(S.ex[k].block===e.block)push(S.ex[k]);return}const su=SUST[k];if(!su)return;const have=byName(su.name);push(have||{name:su.name,sust:k})});
+  if(!out.length){const g=grpOf(base);if(g)Object.values(S.ex).filter(x=>x.block===e.block&&grpOf(x.id)===g).forEach(push)}
+  return out}
 const fichaOf=name=>{const k=norm(name);return FICHAS.find(f=>f.n.includes(k))||null};
 const sinFicha=e=>!!e&&e.block!=='cal'&&e.id!=='_cal'&&!(e.how&&e.how.length);
 function applyFichas(ex){let n=0;Object.values(ex||{}).forEach(e=>{if(!sinFicha(e))return;const f=fichaOf(e.name);if(!f)return;e.how=f.s.slice();e.ojo=f.o;if(f.sil)e.sil=f.sil;n++});return n}
-function migrate(d){const r=migrate0(d);if(r&&r.ex)applyFichas(r.ex);if(r)fillDance(r);return r}
+function barInit(r){if(r.barInit||!r.ex)return;DEFBAR.forEach(id=>{const e=r.ex[id];if(e&&e.bar==null)e.bar=true});r.barInit=1}
+function migrate(d){const r=migrate0(d);if(r&&r.ex)applyFichas(r.ex);if(r){fillDance(r);barInit(r)}return r}
 /* días de baile: lista de fechas. La primera vez se arma con las sesiones "tras bailar" y el "Hoy bailé" que hubiera. */
 function fillDance(r){if(Array.isArray(r.danceDays))return;const set=new Set((r.sessions||[]).filter(x=>x.danced).map(x=>x.date));if(r.dance)set.add(r.dance);r.danceDays=[...set].sort()}
 function migrate0(d){if(!d)return null;if(d.v===5)return d;if(d.v===4){upgradeEx(d.ex||{});d.v=5;return d}if(d.v>=1&&d.v<=3){const n=defaults();n.sessions=d.sessions||[];n.measures=d.measures||[];if(d.bodyFields)n.bodyFields=d.bodyFields;if(d.v>=2&&d.flexTests)n.flexTests=d.flexTests;if(d.settings)n.settings=d.settings;return n}return null}
 const KEY='trazo_v1';
 let S;
-function load(){try{const r=localStorage.getItem(KEY);if(r){const d=migrate(JSON.parse(r));if(d)return d}}catch(e){}return defaults()}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const d=migrate(JSON.parse(r));if(d)return d}}catch(e){}const n=defaults();barInit(n);return n}
 let storageOk=true;
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));storageOk=true}catch(e){if(storageOk)toast('Este navegador no está guardando tus datos');storageOk=false}}
 function save(){S.updatedAt=Date.now();persist();cloud.dirty=true;clearTimeout(cloud.timer);cloud.timer=setTimeout(push,700)}
@@ -825,7 +887,7 @@ function aiText(){
   t+='## Rutina actual\nMeta: '+S.settings.goal+' días por semana. Mis días rotan en orden: si no voy, sigue el que toca. Cada sesión es calentamiento, estiramiento y fuerza, no siempre en ese orden. El calentamiento es libre (no sigo rutina, solo marco que calenté).\n';
   t+='Progresión de la app: si completo el rango de repeticiones en todas las series, sugiere subir 2,5 kg (1 kg en laterales). Las sesiones marcadas "tras bailar" (vengo de clase de danza) no cuentan para subir peso ni récords.\n';
   const md=myDays(),same=b=>md.every(d=>d[b].join()===md[0][b].join());const shared=['est'].filter(b=>md.length>1&&same(b));
-  const blk=(d,b)=>{if(b==='cal')return '';const l=d[b].map(exOf).filter(Boolean);return l.length?'- '+BLOCKS[b]+': '+l.map(e=>e.name+' ('+rx(e)+(e.flag?', carga el antebrazo':'')+')').join('; ')+'\n':''};
+  const blk=(d,b)=>{if(b==='cal')return '';const l=d[b].map(exOf).filter(Boolean);return l.length?'- '+BLOCKS[b]+': '+l.map(e=>e.name+' ('+rx(e)+(e.flag?', carga el antebrazo':'')+(e.bar?', kg = solo discos, sin contar la barra':'')+')').join('; ')+'\n':''};
   if(shared.length){t+='\nEn todos los días\n';shared.forEach(b=>t+=blk(md[0],b))}
   md.forEach(d=>{t+='\n'+d.name+' · '+d.focus+'\n';['cal','est','fue'].filter(b=>!shared.includes(b)).forEach(b=>t+=blk(d,b))});
   const duv=S.days.filter(d=>d.plan==='duvan');if(duv.length)t+='\nDías del plan de Duván (no rotan): '+duv.map(d=>d.name+' · '+d.focus).join(', ')+'\n';
@@ -836,7 +898,7 @@ function aiText(){
   const ss=S.sessions.filter(s=>s.date>=from&&s.date<=tk);
   ss.forEach(s=>{t+='\n'+dl(s.date)+': '+s.dayName+' · '+s.focus+', '+s.min+' min'+(s.danced?', tras bailar':'')+(s.records&&s.records.length?'. Récords: '+s.records.map(r=>r.name+' '+fmtNum(r.kg)+' kg × '+(r.reps==null?'—':r.reps)).join(', '):'')+'\n';
     ['cal','est','fue'].forEach(b=>Object.values(s.ex).filter(x=>x.block===b).forEach(x=>{const d=x.sets.filter(q=>q.done);if(!d.length)return;
-      t+='  - '+BLOCKS[b]+' · '+x.name+': '+d.map(q=>b==='fue'&&q.kg!=null?fmtNum(q.kg)+'×'+(q.reps==null?'—':q.reps):q.secs?q.secs+' s':q.reps!=null?q.reps+' reps':'hecha').join(', ')+'\n'}))});
+      t+='  - '+BLOCKS[b]+' · '+x.name+(x.bar?' (kg = solo discos, + barra)':'')+': '+d.map(q=>b==='fue'&&q.kg!=null?fmtNum(q.kg)+'×'+(q.reps==null?'—':q.reps):q.secs?q.secs+' s':q.reps!=null?q.reps+' reps':'hecha').join(', ')+'\n'}))});
   if(!ss.length)t+='\nNo hay sesiones en estas 4 semanas.\n';
   t+='\n## Medidas (todas las registradas)\n';
   const ms=S.measures.slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -857,7 +919,7 @@ function viewProgreso(){
   let strength='';
   if(progEx){const pts=S.sessions.map(s=>{const x=s.ex[progEx];if(!x)return null;const ks=x.sets.filter(t=>t.done&&t.kg!=null);if(!ks.length)return null;const top=ks.reduce((a,b)=>b.kg>a.kg||(b.kg===a.kg&&(b.reps||0)>(a.reps||0))?b:a);return {date:s.date,y:top.kg,lab:fmtNum(top.kg)+' kg × '+(top.reps==null?'—':top.reps)}}).filter(Boolean);
     const nm=(S.ex[progEx]&&S.ex[progEx].name)||S.sessions.map(s=>s.ex[progEx]).filter(Boolean).pop().name;
-    strength='<div class="field"><label for="progex">Ejercicio</label><select id="progex" data-in="progex">'+fueIds.map(id=>{const n=(S.ex[id]&&S.ex[id].name)||S.sessions.map(s=>s.ex[id]).filter(Boolean).pop().name;return '<option value="'+id+'"'+(id===progEx?' selected':'')+'>'+esc(n)+'</option>'}).join('')+'</select></div>'+(pts.length>1?metricCard('Mejor serie · '+nm,'kg',pts,'up',minSpan(null,'kg')):'<div class="empty">Con una sesión más de <b>'+esc(nm)+'</b> aparece la curva. Por ahora: '+fmtNum(pts[0].y)+' kg.</div>');
+    strength='<div class="field"><label for="progex">Ejercicio</label><select id="progex" data-in="progex">'+fueIds.map(id=>{const n=(S.ex[id]&&S.ex[id].name)||S.sessions.map(s=>s.ex[id]).filter(Boolean).pop().name;return '<option value="'+id+'"'+(id===progEx?' selected':'')+'>'+esc(n)+'</option>'}).join('')+'</select></div>'+(pts.length>1?metricCard('Mejor serie · '+nm+(S.ex[progEx]&&S.ex[progEx].bar?' · discos':''),'kg',pts,'up',minSpan(null,'kg')):'<div class="empty">Con una sesión más de <b>'+esc(nm)+'</b> aparece la curva. Por ahora: '+fmtNum(pts[0].y)+' kg.</div>');
   } else strength='<div class="empty"><b>Todavía no hay series registradas.</b> Cuando termines tu primera sesión, aquí ves cómo sube cada ejercicio.</div>';
   const recent=S.sessions.slice(-8).reverse();
   return '<div class="wrap">'+BG+'<div class="top"><div class="brand">'+I.brand+'trazo</div></div><div class="stack">'+
@@ -909,6 +971,7 @@ function exEditorHTML(){
   '<div class="field"><label for="egrp">Grupo (para coincidir con Duván)</label><select id="egrp" data-in="e.grp"><option value="">Ninguno</option>'+DGROUPS.map(([k,l])=>'<option value="'+k+'"'+((e.grp||GRP[e.id]||'')===k?' selected':'')+'>'+l+'</option>').join('')+'</select></div>'+
   '<label class="check"><input id="eside" type="checkbox"'+(e.side?' checked':'')+' data-in="e.side"> Se hace por lado (izquierda y derecha)</label>'+
   '<label class="check"><input id="eflag" type="checkbox"'+(e.flag?' checked':'')+' data-in="e.flag"> Carga el antebrazo (mostrar aviso)</label>'+
+  (e.block==='fue'?'<label class="check"><input id="ebar" type="checkbox"'+(e.bar?' checked':'')+' data-in="e.bar"> Incluye barra (anoto solo los discos)</label>':'')+
   '<div class="field"><label for="etip">Consejo corto (sale debajo del nombre)</label><textarea id="etip" data-in="e.tip">'+esc(e.tip)+'</textarea></div>'+
   '<div class="field"><label for="ehow">Cómo se hace (un paso por línea)</label><textarea id="ehow" data-in="e.how" style="min-height:120px">'+esc((e.how||[]).join('\n'))+'</textarea></div>'+
   '<div class="field"><label for="eojo">Ojo (error común)</label><input id="eojo" data-in="e.ojo" value="'+esc(e.ojo||'')+'"></div>'+
@@ -986,7 +1049,7 @@ function tick(){
 let justDone=null;
 function stepLabel(st){const e=exOf(st.id);return e?e.name:''}
 function setLabel(e,k){if(!e.side)return String(k+1);return Math.floor(k/2)+1+(k%2?' D':' I')}
-function stepDone(D,st){const L=D.log[st.id];return !!L&&L.sets.every(s=>s.done)}
+function stepDone(D,st){if(st.t==='est'&&D.estFree)return true;const L=D.log[st.id];return !!L&&L.sets.every(s=>s.done)}
 function nextIdx(D){for(let i=D.step+1;i<D.steps.length;i++)if(!stepDone(D,D.steps[i]))return i;for(let i=0;i<D.step;i++)if(D.steps[i].t!=='cal'&&!stepDone(D,D.steps[i]))return i;return -1}
 /* Si ya está estirando o haciendo fuerza, ya calentó: se marca solo (pedido por Leo). */
 function autoWarm(D){const w=D&&D.log&&D.log._cal;if(w&&!w.sets[0].done)w.sets[0].done=true}
@@ -1005,17 +1068,20 @@ function renderSession(){
   const inBlock=D.steps.map((s,i)=>({s,i})).filter(x=>x.s.t===st.t);const pos=inBlock.findIndex(x=>x.i===D.step)+1;
   const dots=inBlock.map(x=>'<i class="'+(x.i===D.step?'c':stepDone(D,x.s)?'d':'')+'"></i>').join('');
   const exChips=inBlock.length>1?'<div class="exr" role="group" aria-label="Ejercicios de '+BSHORT[st.t]+'">'+inBlock.map((x,j)=>{const xe=exOf(x.s.id);const dn=stepDone(D,x.s);return '<button class="'+(x.i===D.step?'on':dn?'done':'')+'" data-a="goto" data-v="'+x.i+'"'+(x.i===D.step?' aria-current="step"':'')+'><span class="n">'+(dn?'✓':j+1)+'</span><em>'+esc(xe?xe.name:'')+'</em></button>'}).join('')+'</div>':'';
-  const L=D.log[st.id];const isTime=e.kind==='time',isFue=e.block==='fue';
+  const L=D.log[st.id];const isTime=e.kind==='time',isFue=e.block==='fue';const bar=isFue&&!isTime&&!!e.bar;const kgU=bar?' kg + barra':' kg';
+  const estFree=st.t==='est'?'<button class="'+(D.estFree?'ghostbtn':'chip')+' estfree" data-a="estfree" aria-pressed="'+!!D.estFree+'">'+(D.estFree?'Estiré ✓ · tocar para desmarcar':'Hoy estiré a mi manera · marcar hecho')+'</button>':'';
   const sg=isFue&&!isTime?suggest(e,D.danced):null;
   let sub=esc(e.tip);const kgLine=!!sg;
-  if(sg)sub=D.danced?'Última vez: '+fmtNum(sg.top)+' kg × '+sg.reps.join(', ')+'. Hoy bailaste: mismo peso y sin presión.':sg.up?'Última vez: '+fmtNum(sg.top)+' kg × '+sg.reps.join(', ')+'. Llegaste al tope del rango en todas: hoy le pones '+fmtNum(sg.kg)+' o le explicas a tu cuerpo por qué no.':'Última vez: '+fmtNum(sg.top)+' kg × '+sg.reps.join(', ')+'. Mismo peso: la meta es llegar a '+sg.hi+' en todas las series.';
+  if(sg)sub=D.danced?'Última vez: '+fmtNum(sg.top)+kgU+' × '+sg.reps.join(', ')+'. Hoy bailaste: mismo peso y sin presión.':sg.up?'Última vez: '+fmtNum(sg.top)+kgU+' × '+sg.reps.join(', ')+'. Llegaste al tope del rango en todas: hoy le pones '+fmtNum(sg.kg)+' o le explicas a tu cuerpo por qué no.':'Última vez: '+fmtNum(sg.top)+kgU+' × '+sg.reps.join(', ')+'. Mismo peso: la meta es llegar a '+sg.hi+' en todas las series.';
   let body='<div class="silbox">'+silSVG(e.sil)+'<span class="hint">'+(e.block==='cal'?'a soltar el cuerpo':isTime?'mantén y respira':isFue?'controla la bajada':'lento y con control')+'</span></div>'+
   '<div style="display:flex;flex-direction:column;gap:4px"><span class="blabel" style="--bc:'+BCOL[e.block]+'"><i></i>'+BSHORT[e.block]+' · ejercicio '+pos+' de '+inBlock.length+'</span><h1 class="big" style="font-size:34px;line-height:1">'+esc(e.name)+'</h1><p class="quip" style="font-size:14px">'+sub+'</p>'+(kgLine&&e.tip?'<p class="quip" style="font-size:13px;color:var(--faint)">'+esc(e.tip)+'</p>':'')+'</div>'+
   (sinFicha(e)?'<p class="quip" style="font-size:13px;color:var(--faint)">Sin ficha todavía. Pídela en Progreso › Pedir fichas.</p>':'')+
   (e.kind!=='warm'&&((e.how&&e.how.length)||e.ojo)?'<button class="howbtn" data-a="how" aria-expanded="'+howOpen+'">¿Cómo se hace?'+I.down+'</button>'+(howOpen?'<div class="how">'+(e.how&&e.how.length?'<ol>'+e.how.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>':'')+(e.ojo?'<p><b>Ojo:</b> '+esc(e.ojo)+'</p>':'')+'</div>':''):'')+
   (e.kind==='warm'?'':'<button class="howbtn" data-a="swap" aria-expanded="'+swapOpen+'">'+(e.block==='fue'?'¿Máquina ocupada? Cambiar ejercicio':'Cambiar ejercicio')+I.down+'</button>')+
   (e.kind!=='warm'&&swapOpen?(()=>{const inS=new Set(D.steps.map(x=>x.id));const opts=Object.values(S.ex).filter(x=>x.block===e.block&&x.id!==e.id).sort((a,c)=>a.name.localeCompare(c.name,'es'));
+    const sim=e.block==='fue'?similares(e):[];
     return '<div class="how"><span class="mono" style="font-size:10px">Solo cambia en esta sesión · tu rutina queda igual</span>'+
+    (sim.length?'<b style="font-size:14px">Parecidos</b><div class="list">'+sim.map(x=>x.sust?'<button class="row" data-a="swapsust" data-v="'+x.sust+'" style="padding:10px 0"><div class="t"><b>'+esc(x.name)+'</b><span>Nuevo · con su ficha y su propio historial'+(SUST[x.sust].bar?' · lleva barra':'')+'</span></div><span class="tag">crear</span></button>':'<button class="row" data-a="swapto" data-v="'+x.id+'" style="padding:10px 0"><div class="t"><b>'+esc(x.name)+'</b><span>'+exSummary(x)+(inS.has(x.id)?' · ya está en esta sesión':'')+'</span></div><span class="tag">usar</span></button>').join('')+'</div><b style="font-size:14px">Otro de tu biblioteca</b>':'')+
     '<input id="swapq" type="search" data-in="swapq" placeholder="Busca o escribe uno nuevo" aria-label="Buscar ejercicio" autocomplete="off">'+
     '<button class="chip" id="swapnew" data-a="swapnew" style="align-self:flex-start;display:none"></button>'+
     '<span id="swapnone" style="font-size:12px;color:var(--muted);display:none">No existe todavía: créalo y copia series, reps y descanso de '+esc(e.name)+', con su propio historial de peso.</span>'+
@@ -1024,8 +1090,9 @@ function renderSession(){
   if(e.kind==='warm'){const dn=L.sets[0].done;
     body+='<button class="'+(dn?'ghostbtn':'cta')+'" data-a="toggleset" data-id="_cal" data-k="0" aria-pressed="'+dn+'" style="justify-content:center">'+(dn?'Calentado ✓ · tocar para desmarcar':'<span class="lb"><span>Ya calenté</span></span>')+'</button>';
   } else if(isFue&&!isTime){
-    body+='<div class="sets"><div class="sethead"><span>SERIE</span><span>ANTERIOR</span><span style="text-align:center">KG</span><span style="text-align:center">REPS</span><span></span></div>'+
-    L.sets.map((s,k)=>'<div class="setrow'+(s.done?' done':'')+(justDone===e.id+'_'+k?' just':'')+'"><span class="sn">'+setLabel(e,k)+'</span><span class="pv num">'+(s.prev&&s.prev.kg!=null?fmtNum(s.prev.kg)+' × '+(s.prev.reps==null?'—':s.prev.reps):'—')+'</span><input id="kg_'+e.id+'_'+k+'" type="text" inputmode="decimal" aria-label="Kilos serie '+setLabel(e,k)+'" value="'+(s.kg!=null?fmtNum(s.kg):'')+'" placeholder="'+(s.ph!=null?fmtNum(s.ph):'kg')+'" data-in="kg" data-id="'+e.id+'" data-k="'+k+'"><input id="rp_'+e.id+'_'+k+'" type="text" inputmode="numeric" aria-label="Repeticiones serie '+setLabel(e,k)+'" value="'+(s.reps!=null?s.reps:'')+'" placeholder="'+esc(String(e.target).split('-').pop())+'" data-in="reps" data-id="'+e.id+'" data-k="'+k+'"><button class="tick" data-a="toggleset" data-id="'+e.id+'" data-k="'+k+'" aria-label="'+(s.done?'Desmarcar':'Marcar')+' serie '+setLabel(e,k)+'">'+I.tick+'</button></div>').join('')+'</div>'+
+    body+='<label class="check"><input type="checkbox" data-in="bar"'+(bar?' checked':'')+'> Incluye barra · anoto solo los discos (los dos lados)</label>'+
+    '<div class="sets"><div class="sethead"><span>SERIE</span><span>ANTERIOR</span><span style="text-align:center">'+(bar?'DISCOS':'KG')+'</span><span style="text-align:center">REPS</span><span></span></div>'+
+    L.sets.map((s,k)=>'<div class="setrow'+(s.done?' done':'')+(justDone===e.id+'_'+k?' just':'')+'"><span class="sn">'+setLabel(e,k)+'</span><span class="pv num">'+(s.prev&&s.prev.kg!=null?fmtNum(s.prev.kg)+' × '+(s.prev.reps==null?'—':s.prev.reps):'—')+'</span><input id="kg_'+e.id+'_'+k+'" type="text" inputmode="decimal" aria-label="Kilos serie '+setLabel(e,k)+'" value="'+(s.kg!=null?fmtNum(s.kg):'')+'" placeholder="'+(s.ph!=null?fmtNum(s.ph):(bar?'discos':'kg'))+'" data-in="kg" data-id="'+e.id+'" data-k="'+k+'"><input id="rp_'+e.id+'_'+k+'" type="text" inputmode="numeric" aria-label="Repeticiones serie '+setLabel(e,k)+'" value="'+(s.reps!=null?s.reps:'')+'" placeholder="'+esc(String(e.target).split('-').pop())+'" data-in="reps" data-id="'+e.id+'" data-k="'+k+'"><button class="tick" data-a="toggleset" data-id="'+e.id+'" data-k="'+k+'" aria-label="'+(s.done?'Desmarcar':'Marcar')+' serie '+setLabel(e,k)+'">'+I.tick+'</button></div>').join('')+'</div>'+
     '<button class="chip" style="align-self:flex-start" data-a="addset" data-id="'+e.id+'">+ Serie extra</button>';
   } else if(isTime){
     body+='<div class="sets"><div class="sethead" style="grid-template-columns:44px minmax(0,1fr) 110px 44px"><span>SERIE</span><span>OBJETIVO</span><span style="text-align:center">TIEMPO</span><span></span></div>'+
@@ -1037,7 +1104,7 @@ function renderSession(){
   const prevOv=document.querySelector('#ov .ov');const keepY=prevOv&&prevOv.dataset.step===String(D.step)?prevOv.scrollTop:0;
   // la fila de ejercicios del bloque conserva su desplazamiento lateral al cambiar de ejercicio
   const prevR=prevOv&&prevOv.dataset.blk===st.t?prevOv.querySelector('.exr'):null;const keepX=prevR?prevR.scrollLeft:0;
-  $('#ov').innerHTML='<div class="ov" data-step="'+D.step+'" data-blk="'+st.t+'" role="dialog" aria-label="Sesión"><div class="in"><div class="shead"><button class="iconbtn" data-a="exitsession" aria-label="Salir de la sesión">'+I.close+'</button><div class="sp"><span class="mono" style="font-size:10px">'+(()=>{const dd=S.days.find(x=>x.id===D.dayId);return dd?esc(dd.name):'Sesión'})()+' · '+D.steps.filter(x=>stepDone(D,x)).length+' de '+D.steps.length+' hechos</span><b>'+(()=>{const dd=S.days.find(x=>x.id===D.dayId);return dd?esc(dd.focus):''})()+'</b></div><button class="chip" data-a="finish">Terminar</button></div>'+(D.askEnd?'<div class="confirm"><span style="flex:1">Te faltan '+D.steps.filter(st=>!stepDone(D,st)).length+' ejercicios. ¿Terminar igual? Se guarda lo que marcaste.</span><button class="ghostbtn" style="height:40px" data-a="noend">Seguir</button><button class="ghostbtn" style="height:40px" data-a="finish" data-sure="1">Terminar</button></div>':'')+tabs+exChips+body+'</div></div><div class="sfoot" id="sfoot"></div>';
+  $('#ov').innerHTML='<div class="ov" data-step="'+D.step+'" data-blk="'+st.t+'" role="dialog" aria-label="Sesión"><div class="in"><div class="shead"><button class="iconbtn" data-a="exitsession" aria-label="Salir de la sesión">'+I.close+'</button><div class="sp"><span class="mono" style="font-size:10px">'+(()=>{const dd=S.days.find(x=>x.id===D.dayId);return dd?esc(dd.name):'Sesión'})()+' · '+D.steps.filter(x=>stepDone(D,x)).length+' de '+D.steps.length+' hechos</span><b>'+(()=>{const dd=S.days.find(x=>x.id===D.dayId);return dd?esc(dd.focus):''})()+'</b></div><button class="chip" data-a="finish">Terminar</button></div>'+(D.askEnd?'<div class="confirm"><span style="flex:1">Te faltan '+D.steps.filter(st=>!stepDone(D,st)).length+' ejercicios. ¿Terminar igual? Se guarda lo que marcaste.</span><button class="ghostbtn" style="height:40px" data-a="noend">Seguir</button><button class="ghostbtn" style="height:40px" data-a="finish" data-sure="1">Terminar</button></div>':'')+tabs+exChips+estFree+body+'</div></div><div class="sfoot" id="sfoot"></div>';
   if(keepY){const o=document.querySelector('#ov .ov');if(o)o.scrollTop=keepY}
   const r=document.querySelector('#ov .exr');if(r){r.scrollLeft=keepX;const on=r.querySelector('button.on');if(on){const l=on.offsetLeft-r.offsetLeft,rr=l+on.offsetWidth;if(l<r.scrollLeft)r.scrollLeft=l-8;else if(rr>r.scrollLeft+r.clientWidth)r.scrollLeft=rr-r.clientWidth+8}}
   justDone=null;renderFoot();
@@ -1050,7 +1117,8 @@ function renderFoot(){
 function finishSession(){
   const D=S.draft;if(!D)return;const d=S.days.find(x=>x.id===D.dayId)||curDay();
   const ex={};let any=false;
-  Object.keys(D.log).forEach(id=>{const e=exOf(id);if(!e)return;const sets=D.log[id].sets.map(s=>({kg:s.kg,reps:s.reps,done:!!s.done,secs:s.secs||null}));if(sets.some(s=>s.done))any=true;ex[id]={name:e.name,block:e.block,sets}});
+  Object.keys(D.log).forEach(id=>{const e=exOf(id);if(!e)return;const sets=D.log[id].sets.map(s=>({kg:s.kg,reps:s.reps,done:!!s.done,secs:s.secs||null}));if(sets.some(s=>s.done))any=true;ex[id]={name:e.name,block:e.block,sets};if(e.bar&&e.block==='fue')ex[id].bar=true});
+  if(D.estFree){ex._est={name:'Estiramiento libre',block:'est',sets:[{kg:null,reps:null,done:true,secs:null}]};any=true}
   stopTimer();
   if(!any){S.draft=null;save();closeTop();toast('Sesión descartada: no marcaste ninguna serie.');return}
   const id=uid();const endAt=(D.last&&Date.now()-D.last>30*60000)?D.last:Date.now();const min=Math.min(240,Math.max(1,Math.round((endAt-D.start)/60000)));
@@ -1180,9 +1248,13 @@ const A={
   how:()=>{howOpen=!howOpen;renderSession()},
   swap:()=>{swapOpen=!swapOpen;renderSession()},
   swapto:el=>swapStep(el.dataset.v),
+  swapsust:el=>{const su=SUST[el.dataset.v];if(!su)return;const cur=exOf(S.draft.steps[S.draft.step].id);const same=Object.values(S.ex).find(x=>x.block===cur.block&&norm(x.name)===norm(su.name));if(same){swapStep(same.id);return}
+    const e={id:'x'+uid(),name:su.name,block:cur.block,kind:cur.kind,sets:cur.sets,target:cur.target,side:su.side!=null?!!su.side:!!cur.side,rest:cur.rest,tip:'',sil:su.sil||cur.sil,flag:!!cur.flag,base:cur.base||cur.id,bar:!!su.bar};const g=cur.grp||GRP[cur.base||cur.id];if(g)e.grp=g;
+    S.ex[e.id]=e;applyFichas({[e.id]:e});swapStep(e.id);toast('Listo: '+su.name+' con historial propio')},
+  estfree:()=>{const D=S.draft;D.estFree=!D.estFree;if(D.estFree){autoWarm(D);D.last=Date.now()}save();renderSession()},
   swapnew:()=>{const inp=document.getElementById('swapq');const name=(inp&&inp.value||'').trim();if(!name){toast('Escribe el nombre del ejercicio');inp&&inp.focus();return}
     const cur=exOf(S.draft.steps[S.draft.step].id);const same=Object.values(S.ex).find(x=>x.block===cur.block&&x.name.trim().toLowerCase()===name.toLowerCase());if(same){swapStep(same.id);return}
-    const e={id:'x'+uid(),name,block:cur.block,kind:cur.kind,sets:cur.sets,target:cur.target,side:!!cur.side,rest:cur.rest,tip:'',sil:cur.sil,flag:!!cur.flag};if(cur.grp)e.grp=cur.grp;
+    const e={id:'x'+uid(),name,block:cur.block,kind:cur.kind,sets:cur.sets,target:cur.target,side:!!cur.side,rest:cur.rest,tip:'',sil:cur.sil,flag:!!cur.flag,base:cur.base||cur.id,bar:!!cur.bar};if(cur.grp)e.grp=cur.grp;
     S.ex[e.id]=e;applyFichas({[e.id]:e});swapStep(e.id);toast('Listo: '+name+' con historial propio')},
   closesheet:()=>closeTop(),
   scrim:(el,ev)=>{if(ev.target===el)closeTop()}
@@ -1206,7 +1278,7 @@ document.addEventListener('input',ev=>{
   if(k==='tname'||k==='tunit'||k==='thint'||k==='tbetter'){const t=S.flexTests[Number(el.dataset.i)];t[{tname:'name',tunit:'unit',thint:'hint',tbetter:'better'}[k]]=el.value;save();return}
   if(k==='progex'){progEx=el.value;render();return}
 });
-document.addEventListener('change',ev=>{const el=ev.target;if(el.type==='checkbox'&&el.dataset.in&&el.dataset.in.startsWith('e.')&&sheetState&&sheetState.e)sheetState.e[el.dataset.in.slice(2)]=el.checked});
+document.addEventListener('change',ev=>{const el=ev.target;if(el.dataset.in==='bar'&&S.draft){const e=exOf(S.draft.steps[S.draft.step].id);if(e&&S.ex[e.id]){S.ex[e.id].bar=el.checked;save();renderSession()}return}if(el.type==='checkbox'&&el.dataset.in&&el.dataset.in.startsWith('e.')&&sheetState&&sheetState.e)sheetState.e[el.dataset.in.slice(2)]=el.checked});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(T)tick();if(stack.includes('session')&&navigator.wakeLock&&!wakeLock){try{navigator.wakeLock.request('screen').then(l=>wakeLock=l).catch(()=>{})}catch(e){}}}});
 
 render();
